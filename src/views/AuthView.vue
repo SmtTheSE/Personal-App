@@ -40,58 +40,72 @@ async function handleGitHub() {
 </script>
 
 <template>
-  <div class="flex min-h-dvh flex-col items-center justify-center bg-ios-bg px-6 dark:bg-ios-bg-dark ios-safe-top ios-safe-bottom">
-    <div class="mb-10 text-center">
-      <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-[22px] bg-ios-blue shadow-lg shadow-ios-blue/30">
+  <div class="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden ios-safe-top ios-safe-bottom">
+    <!-- iOS 18-style mesh gradient background -->
+    <div
+      class="pointer-events-none absolute inset-0"
+      aria-hidden="true"
+      style="background:
+        radial-gradient(ellipse at 20% 20%, rgba(0,122,255,0.25) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 30%, rgba(175,82,222,0.2) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 80%, rgba(52,199,89,0.15) 0%, transparent 50%),
+        var(--color-system-grouped-bg)"
+    />
+    <div
+      class="pointer-events-none absolute inset-0 dark:block hidden"
+      aria-hidden="true"
+      style="background:
+        radial-gradient(ellipse at 20% 20%, rgba(10,132,255,0.2) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 30%, rgba(191,90,242,0.15) 0%, transparent 50%),
+        var(--color-system-grouped-bg-dark)"
+    />
+
+    <div class="relative z-10 mb-8 text-center">
+      <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-[22px] bg-system-blue shadow-lg shadow-system-blue/30">
         <PhStudent :size="40" weight="fill" class="text-white" />
       </div>
-      <h1 class="ios-large-title text-black dark:text-white">Nexus</h1>
-      <p class="ios-subhead mt-1 text-ios-tertiary-label">Your Personal Student OS</p>
+      <h1 class="text-large-title text-primary">Nexus</h1>
+      <p class="text-subheadline mt-1 text-tertiary">Your Personal Student OS</p>
     </div>
 
-    <div class="w-full max-w-sm space-y-4">
+    <!-- Glass card form -->
+    <div
+      class="material-glass relative z-10 w-full max-w-sm space-y-4 p-6 mx-4"
+      :style="{ borderRadius: 'var(--radius-sheet)' }"
+    >
       <IOSTextField
         v-if="isSignUp"
         v-model="username"
         label="Username"
         placeholder="your_username"
+        clearable
       />
-      <IOSTextField
-        v-model="email"
-        label="Email"
-        type="email"
-        placeholder="you@university.edu"
-      />
-      <IOSTextField
-        v-model="password"
-        label="Password"
-        type="password"
-        placeholder="••••••••"
-      />
+      <IOSTextField v-model="email" label="Email" type="email" placeholder="you@university.edu" clearable />
+      <IOSTextField v-model="password" label="Password" type="password" placeholder="••••••••" />
 
-      <p v-if="error" class="ios-footnote text-center text-ios-red">{{ error }}</p>
+      <p v-if="error" class="text-footnote text-center text-system-red">{{ error }}</p>
 
-      <IOSButton block :loading="auth.loading" @click="handleSubmit">
+      <IOSButton block variant="borderedProminent" :loading="auth.loading" @click="handleSubmit">
         {{ isSignUp ? 'Create Account' : 'Sign In' }}
       </IOSButton>
 
       <div class="relative py-2">
         <div class="absolute inset-0 flex items-center">
-          <div class="w-full border-t border-ios-separator dark:border-ios-separator-dark" />
+          <div class="w-full border-t border-[var(--color-separator)] dark:border-[var(--color-separator-dark)]" />
         </div>
         <div class="relative flex justify-center">
-          <span class="bg-ios-bg px-3 ios-footnote text-ios-tertiary-label dark:bg-ios-bg-dark">or</span>
+          <span class="material-glass px-3 text-footnote text-tertiary">or</span>
         </div>
       </div>
 
-      <IOSButton variant="secondary" block :loading="auth.loading" @click="handleGitHub">
+      <IOSButton block variant="borderedProminent" :loading="auth.loading" @click="handleGitHub">
         <PhGithubLogo :size="20" class="mr-2" weight="fill" />
         Continue with GitHub
       </IOSButton>
 
       <button
         type="button"
-        class="w-full py-2 text-center ios-subhead text-ios-blue"
+        class="w-full py-2 text-center text-subheadline text-system-blue press-scale"
         @click="isSignUp = !isSignUp"
       >
         {{ isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up" }}

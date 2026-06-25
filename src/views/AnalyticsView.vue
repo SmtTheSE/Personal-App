@@ -1,19 +1,22 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js'
+import { ref, computed } from 'vue'
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Tooltip } from 'chart.js'
 import { Bar } from 'vue-chartjs'
 import { format, subDays } from 'date-fns'
 import { useAnalyticsStore } from '@/stores/analytics'
 import { useAuthStore } from '@/stores/auth'
 import { useTasksStore } from '@/stores/tasks'
+import PageShell from '@/components/layout/PageShell.vue'
 import NavBar from '@/components/layout/NavBar.vue'
-import IOSCard from '@/components/ui/IOSCard.vue'
+import WidgetMetric from '@/components/ui/WidgetMetric.vue'
 import IOSButton from '@/components/ui/IOSButton.vue'
 import IOSSheet from '@/components/ui/IOSSheet.vue'
 import IOSTextField from '@/components/ui/IOSTextField.vue'
+import IOSRingProgress from '@/components/ui/IOSRingProgress.vue'
+import StudyHeatmap from '@/components/ui/StudyHeatmap.vue'
 import { PhClock, PhFlame, PhPlus } from '@phosphor-icons/vue'
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip)
 
 const analyticsStore = useAnalyticsStore()
 const authStore = useAuthStore()
@@ -23,29 +26,29 @@ const showSheet = ref(false)
 const topic = ref('')
 const duration = ref('30')
 
-onMounted(() => analyticsStore.fetchSessions())
+const dailyGoal = computed(() => authStore.profile?.study_goal_mins ?? 120)
+const todayMinutes = computed(() => {
+  const today = format(new Date(), 'yyyy-MM-dd')
+  return analyticsStore.sessionsByDay.get(today) ?? 0
+})
 
 const chartData = computed(() => {
   const labels: string[] = []
   const data: number[] = []
-
   for (let i = 6; i >= 0; i--) {
     const day = subDays(new Date(), i)
     const key = format(day, 'yyyy-MM-dd')
     labels.push(format(day, 'EEE'))
     data.push((analyticsStore.sessionsByDay.get(key) ?? 0) / 60)
   }
-
   return {
     labels,
-    datasets: [
-      {
-        label: 'Study Hours',
-        data,
-        backgroundColor: 'rgba(0, 122, 255, 0.7)',
-        borderRadius: 6,
-      },
-    ],
+    datasets: [{
+      label: 'Study Hours',
+      data,
+      backgroundColor: 'rgba(0, 122, 255, 0.75)',
+      borderRadius: 6,
+    }],
   }
 })
 
@@ -54,8 +57,8 @@ const chartOptions = {
   maintainAspectRatio: false,
   plugins: { legend: { display: false } },
   scales: {
-    y: { beginAtZero: true, grid: { display: false } },
-    x: { grid: { display: false } },
+    y: { beginAtZero: true, grid: { display: false }, ticks: { color: '#8E8E93' } },
+    x: { grid: { display: false }, ticks: { color: '#8E8E93' } },
   },
 }
 
@@ -69,57 +72,70 @@ async function logSession() {
 </script>
 
 <template>
-  <div>
-    <NavBar title="Analytics" large>
-      <div class="flex justify-end px-4 pb-2">
-        <button type="button" class="flex h-8 w-8 items-center justify-center rounded-full bg-ios-blue text-white" @click="showSheet = true">
-          <PhPlus :size="20" weight="bold" />
-        </button>
-      </div>
-    </NavBar>
+  <PageShell :on-refresh="() => analyticsStore.fetchSessions()" refreshable>
+    <template #header>
+      <NavBar title="Analytics" large>
+        <div class="flex justify-end px-4 pb-2">
+          <button
+            type="button"
+            class="flex h-11 w-11 items-center justify-center rounded-full bg-system-blue text-white press-scale"
+            aria-label="Log session"
+            @click="showSheet = true"
+          >
+            <PhPlus :size="20" weight="bold" />
+          </button>
+        </div>
+      </NavBar>
+    </template>
 
     <div class="space-y-6 px-4 py-4">
       <div class="grid grid-cols-2 gap-3">
-        <IOSCard class="!p-4">
-          <PhClock :size="22" class="text-ios-blue" weight="fill" />
-          <p class="mt-2 text-[28px] font-bold text-black dark:text-white">
-            {{ Math.round(analyticsStore.weeklyMinutes / 60) }}h
-          </p>
-          <p class="ios-caption text-ios-tertiary-label">This week</p>
-        </IOSCard>
-        <IOSCard class="!p-4">
-          <PhFlame :size="22" class="text-ios-orange" weight="fill" />
-          <p class="mt-2 text-[28px] font-bold text-black dark:text-white">{{ tasksStore.studyStreak }}</p>
-          <p class="ios-caption text-ios-tertiary-label">Day streak</p>
-        </IOSCard>
+        <WidgetMetric
+          :icon="PhClock"
+          icon-color="text-system-blue"
+          label="This Week"
+          :value="`${Math.round(analyticsStore.weeklyMinutes / 60)}h`"
+        />
+        <WidgetMetric
+          :icon="PhFlame"
+          icon-color="text-system-orange"
+          label="Streak"
+          :value="tasksStore.studyStreak"
+          subtitle="days"
+        />
       </div>
 
-      <IOSCard title="Weekly Study Hours" class="!p-4">
+      <div class="surface-elevated p-4" :style="{ borderRadius: 'var(--radius-card)' }">
+        <h3 class="text-headline mb-4 text-primary">Daily Goal</h3>
+        <div class="flex items-center justify-center py-2">
+          <IOSRingProgress
+            :value="todayMinutes"
+            :max="dailyGoal"
+            label="today"
+            color="var(--color-system-green)"
+          />
+        </div>
+      </div>
+
+      <div class="surface-elevated p-4" :style="{ borderRadius: 'var(--radius-card)' }">
+        <h3 class="text-headline mb-3 text-primary">Weekly Study Hours</h3>
         <div class="h-48">
           <Bar :data="chartData" :options="chartOptions" />
         </div>
-      </IOSCard>
+      </div>
 
-      <IOSCard class="!p-4">
-        <p class="ios-footnote text-ios-tertiary-label">Daily goal</p>
-        <p class="ios-title2 mt-1 text-black dark:text-white">
-          {{ authStore.profile?.study_goal_mins ?? 120 }} min/day
-        </p>
-        <div class="mt-3 h-2 overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
-          <div
-            class="h-full rounded-full bg-ios-green transition-all"
-            :style="{ width: `${Math.min(100, (analyticsStore.weeklyMinutes / 7 / (authStore.profile?.study_goal_mins ?? 120)) * 100)}%` }"
-          />
-        </div>
-      </IOSCard>
+      <div class="surface-elevated p-4" :style="{ borderRadius: 'var(--radius-card)' }">
+        <h3 class="text-headline mb-3 text-primary">Activity</h3>
+        <StudyHeatmap :data="analyticsStore.sessionsByDay" :weeks="12" />
+      </div>
     </div>
 
     <IOSSheet :open="showSheet" title="Log Study Session" @close="showSheet = false">
       <div class="space-y-4">
-        <IOSTextField v-model="topic" label="Topic" placeholder="What did you study?" />
-        <IOSTextField v-model="duration" label="Duration (minutes)" type="number" placeholder="30" />
+        <IOSTextField v-model="topic" label="Topic" placeholder="What did you study?" clearable />
+        <IOSTextField v-model="duration" label="Duration (minutes)" type="number" />
         <IOSButton block @click="logSession">Log Session</IOSButton>
       </div>
     </IOSSheet>
-  </div>
+  </PageShell>
 </template>

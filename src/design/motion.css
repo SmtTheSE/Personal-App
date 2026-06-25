@@ -1,0 +1,112 @@
+@layer utilities {
+  .press-scale {
+    transition: transform var(--duration-fast) var(--ease-ios);
+  }
+
+  .press-scale:active {
+    transform: scale(0.97);
+  }
+
+  .transition-ios {
+    transition-timing-function: var(--ease-ios);
+  }
+
+  .animate-check-bounce {
+    animation: check-bounce var(--duration-slow) var(--ease-spring);
+  }
+
+  .animate-pulse-subtle {
+    animation: pulse-subtle 2s ease-in-out infinite;
+  }
+}
+
+/* Page transitions */
+.slide-push-enter-active,
+.slide-push-leave-active {
+  transition: transform var(--duration-slow) var(--ease-ios), opacity var(--duration-normal) ease;
+}
+
+.slide-push-enter-from {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+.slide-push-leave-to {
+  transform: translateX(-30%);
+  opacity: 0;
+}
+
+.slide-pop-enter-active,
+.slide-pop-leave-active {
+  transition: transform var(--duration-slow) var(--ease-ios), opacity var(--duration-normal) ease;
+}
+
+.slide-pop-enter-from {
+  transform: translateX(-30%);
+  opacity: 0;
+}
+
+.slide-pop-leave-to {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+.tab-fade-enter-active,
+.tab-fade-leave-active {
+  transition: opacity var(--duration-fast) ease-out;
+}
+
+.tab-fade-enter-from,
+.tab-fade-leave-to {
+  opacity: 0;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity var(--duration-normal) ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.sheet-enter-active,
+.sheet-leave-active {
+  transition: transform var(--duration-sheet) var(--ease-sheet);
+}
+
+.sheet-enter-from,
+.sheet-leave-to {
+  transform: translateY(100%);
+}
+
+@keyframes check-bounce {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes spin-ios {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .press-scale:active {
+    transform: none;
+  }
+}

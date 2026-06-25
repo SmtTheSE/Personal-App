@@ -1,22 +1,82 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { format, parseISO } from 'date-fns'
+import { ref, computed } from 'vue'
+import { format, parseISO, isToday, isPast, startOfDay } from 'date-fns'
 import { useTasksStore } from '@/stores/tasks'
+import { useHaptics } from '@/composables/useHaptics'
+import PageShell from '@/components/layout/PageShell.vue'
 import NavBar from '@/components/layout/NavBar.vue'
 import IOSListGroup from '@/components/ui/IOSListGroup.vue'
 import IOSListItem from '@/components/ui/IOSListItem.vue'
 import IOSButton from '@/components/ui/IOSButton.vue'
 import IOSSheet from '@/components/ui/IOSSheet.vue'
+import IOSSwipeRow from '@/components/ui/IOSSwipeRow.vue'
 import IOSTextField from '@/components/ui/IOSTextField.vue'
-import { PhPlus, PhTrash, PhCheckCircle } from '@phosphor-icons/vue'
-import type { TaskPriority } from '@/types'
+import IOSEmptyState from '@/components/ui/IOSEmptyState.vue'
+import IOSChip from '@/components/ui/IOSChip.vue'
+import { PhPlus, PhCheckCircle, PhListChecks } from '@phosphor-icons/vue'
+import type { Task, TaskPriority } from '@/types'
+import type { SwipeAction } from '@/composables/useSwipeGesture'
 
 const tasksStore = useTasksStore()
+const { trigger } = useHaptics()
 
 const showSheet = ref(false)
 const newTitle = ref('')
 const newPriority = ref<TaskPriority>('medium')
 const newDueDate = ref('')
+
+const todayTasks = computed(() =>
+  tasksStore.pendingTasks.filter((t) => {
+    if (!t.due_date) return true
+    const due = parseISO(t.due_date)
+    return isToday(due) || isPast(startOfDay(due))
+  })
+)
+
+const scheduledTasks = computed(() =>
+  tasksStore.pendingTasks.filter((t) => {
+    if (!t.due_date) return false
+    const due = parseISO(t.due_date)
+    return !isToday(due) && !isPast(startOfDay(due))
+  })
+)
+
+const completedTasks = computed(() =>
+  tasksStore.tasks.filter((t) => t.status === 'done')
+)
+
+const priorityColors: Record<TaskPriority, 'green' | 'orange' | 'red'> = {
+  low: 'green',
+  medium: 'orange',
+  high: 'red',
+}
+
+function swipeActions(task: Task): SwipeAction[] {
+  return [
+    {
+      id: 'complete',
+      label: 'Done',
+      color: '#fff',
+      background: 'var(--color-system-green)',
+      side: 'leading',
+      onAction: async () => {
+        await tasksStore.toggleComplete(task.id)
+        trigger('success')
+      },
+    },
+    {
+      id: 'delete',
+      label: 'Delete',
+      color: '#fff',
+      background: 'var(--color-system-red)',
+      side: 'trailing',
+      onAction: async () => {
+        await tasksStore.deleteTask(task.id)
+        trigger('warning')
+      },
+    },
+  ]
+}
 
 async function addTask() {
   if (!newTitle.value.trim()) return
@@ -29,113 +89,107 @@ async function addTask() {
   newPriority.value = 'medium'
   newDueDate.value = ''
   showSheet.value = false
+  trigger('light')
 }
 
 async function toggleTask(id: string) {
   await tasksStore.toggleComplete(id)
-  if (navigator.vibrate) navigator.vibrate(10)
-}
-
-const priorityColors: Record<TaskPriority, string> = {
-  low: 'text-ios-green',
-  medium: 'text-ios-orange',
-  high: 'text-ios-red',
+  trigger('success')
 }
 </script>
 
 <template>
-  <div>
-    <NavBar title="Tasks" large>
-      <div class="flex justify-end px-4 pb-2">
-        <button type="button" class="flex h-8 w-8 items-center justify-center rounded-full bg-ios-blue text-white" @click="showSheet = true">
-          <PhPlus :size="20" weight="bold" />
-        </button>
-      </div>
-    </NavBar>
-
-    <div class="space-y-6 px-4 py-4">
-      <section v-if="tasksStore.pendingTasks.length">
-        <p class="ios-footnote mb-2 px-1 font-semibold uppercase tracking-wide text-ios-tertiary-label">
-          To Do · {{ tasksStore.pendingTasks.length }}
-        </p>
-        <IOSListGroup>
-          <IOSListItem
-            v-for="task in tasksStore.pendingTasks"
-            :key="task.id"
-            :title="task.title"
-            @click="toggleTask(task.id)"
+  <PageShell>
+    <template #header>
+      <NavBar title="Tasks" large>
+        <div class="flex justify-end px-4 pb-2">
+          <button
+            type="button"
+            class="flex h-11 w-11 items-center justify-center rounded-full bg-system-blue text-white press-scale"
+            aria-label="Add task"
+            @click="showSheet = true"
           >
-            <template #icon>
-              <div class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-ios-tertiary-label" />
-            </template>
-            <template #trailing>
-              <div class="flex items-center gap-2">
-                <span class="ios-caption font-medium capitalize" :class="priorityColors[task.priority]">
-                  {{ task.priority }}
-                </span>
-                <span v-if="task.due_date" class="ios-caption text-ios-tertiary-label">
-                  {{ format(parseISO(task.due_date), 'MMM d') }}
-                </span>
-                <button
-                  type="button"
-                  class="p-1 text-ios-red"
-                  @click.stop="tasksStore.deleteTask(task.id)"
-                >
-                  <PhTrash :size="16" />
-                </button>
-              </div>
-            </template>
-          </IOSListItem>
-        </IOSListGroup>
-      </section>
+            <PhPlus :size="20" weight="bold" />
+          </button>
+        </div>
+      </NavBar>
+    </template>
 
-      <section v-if="tasksStore.tasks.filter(t => t.status === 'done').length">
-        <p class="ios-footnote mb-2 px-1 font-semibold uppercase tracking-wide text-ios-tertiary-label">
-          Completed
-        </p>
-        <IOSListGroup>
-          <IOSListItem
-            v-for="task in tasksStore.tasks.filter(t => t.status === 'done')"
-            :key="task.id"
-            :title="task.title"
-            @click="toggleTask(task.id)"
-          >
-            <template #icon>
-              <div class="flex h-6 w-6 items-center justify-center rounded-full bg-ios-green">
-                <PhCheckCircle :size="14" weight="fill" class="text-white" />
-              </div>
-            </template>
-          </IOSListItem>
+    <div class="space-y-6 py-4">
+      <template v-if="tasksStore.tasks.length">
+        <IOSListGroup v-if="todayTasks.length" title="Today">
+          <IOSSwipeRow v-for="task in todayTasks" :key="task.id" :actions="swipeActions(task)">
+            <IOSListItem :title="task.title" @click="toggleTask(task.id)">
+              <template #icon>
+                <div class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-tertiary" />
+              </template>
+              <template #trailing>
+                <IOSChip :label="task.priority" :color="priorityColors[task.priority]" />
+              </template>
+            </IOSListItem>
+          </IOSSwipeRow>
         </IOSListGroup>
-      </section>
 
-      <div v-if="!tasksStore.tasks.length" class="py-16 text-center">
-        <p class="ios-subhead text-ios-tertiary-label">No tasks yet</p>
-        <IOSButton class="mt-4" @click="showSheet = true">Add your first task</IOSButton>
-      </div>
+        <IOSListGroup v-if="scheduledTasks.length" title="Scheduled">
+          <IOSSwipeRow v-for="task in scheduledTasks" :key="task.id" :actions="swipeActions(task)">
+            <IOSListItem
+              :title="task.title"
+              :subtitle="task.due_date ? format(parseISO(task.due_date), 'MMM d') : undefined"
+              @click="toggleTask(task.id)"
+            >
+              <template #icon>
+                <div class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-tertiary" />
+              </template>
+              <template #trailing>
+                <IOSChip :label="task.priority" :color="priorityColors[task.priority]" />
+              </template>
+            </IOSListItem>
+          </IOSSwipeRow>
+        </IOSListGroup>
+
+        <IOSListGroup v-if="completedTasks.length" title="Completed">
+          <IOSSwipeRow v-for="task in completedTasks" :key="task.id" :actions="swipeActions(task)">
+            <IOSListItem :title="task.title" @click="toggleTask(task.id)">
+              <template #icon>
+                <div class="flex h-6 w-6 items-center justify-center rounded-full bg-system-green">
+                  <PhCheckCircle :size="14" weight="fill" class="text-white" />
+                </div>
+              </template>
+            </IOSListItem>
+          </IOSSwipeRow>
+        </IOSListGroup>
+      </template>
+
+      <IOSEmptyState
+        v-else
+        title="No tasks yet"
+        subtitle="Add your first task to start tracking your day"
+        :icon="PhListChecks"
+      >
+        <IOSButton @click="showSheet = true">Add Task</IOSButton>
+      </IOSEmptyState>
     </div>
 
     <IOSSheet :open="showSheet" title="New Task" @close="showSheet = false">
       <div class="space-y-4">
-        <IOSTextField v-model="newTitle" label="Title" placeholder="What needs to be done?" />
+        <IOSTextField v-model="newTitle" label="Title" placeholder="What needs to be done?" clearable />
         <IOSTextField v-model="newDueDate" label="Due Date" type="date" />
-        <div class="space-y-1">
-          <label class="ios-footnote font-medium uppercase tracking-wide text-ios-tertiary-label px-1">Priority</label>
+        <div class="space-y-2">
+          <label class="text-section-header px-1">Priority</label>
           <div class="flex gap-2">
-            <button
+            <IOSChip
               v-for="p in (['low', 'medium', 'high'] as TaskPriority[])"
               :key="p"
-              type="button"
-              class="flex-1 rounded-[10px] py-2 ios-subhead font-medium capitalize transition-colors"
-              :class="newPriority === p ? 'bg-ios-blue text-white' : 'bg-black/5 text-black dark:bg-white/10 dark:text-white'"
+              :label="p"
+              :color="priorityColors[p]"
+              :selected="newPriority === p"
+              class="flex-1"
               @click="newPriority = p"
-            >
-              {{ p }}
-            </button>
+            />
           </div>
         </div>
         <IOSButton block @click="addTask">Add Task</IOSButton>
       </div>
     </IOSSheet>
-  </div>
+  </PageShell>
 </template>

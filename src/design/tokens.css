@@ -1,0 +1,92 @@
+@theme {
+  /* Typography — SF Pro system stack */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", sans-serif;
+
+  /* Semantic backgrounds */
+  --color-system-grouped-bg: #f2f2f7;
+  --color-system-grouped-bg-dark: #000000;
+  --color-secondary-grouped-bg: #ffffff;
+  --color-secondary-grouped-bg-dark: #1c1c1e;
+  --color-tertiary-grouped-bg: #f2f2f7;
+  --color-tertiary-grouped-bg-dark: #2c2c2e;
+
+  /* Labels */
+  --color-label: #000000;
+  --color-label-dark: #ffffff;
+  --color-secondary-label: rgba(60, 60, 67, 0.6);
+  --color-secondary-label-dark: rgba(235, 235, 245, 0.6);
+  --color-tertiary-label: #8e8e93;
+  --color-tertiary-label-dark: rgba(235, 235, 245, 0.3);
+
+  /* System accents */
+  --color-system-blue: #007aff;
+  --color-system-blue-dark: #0a84ff;
+  --color-system-green: #34c759;
+  --color-system-green-dark: #30d158;
+  --color-system-orange: #ff9500;
+  --color-system-orange-dark: #ff9f0a;
+  --color-system-red: #ff3b30;
+  --color-system-red-dark: #ff453a;
+  --color-system-purple: #af52de;
+  --color-system-purple-dark: #bf5af2;
+  --color-system-teal: #5ac8fa;
+  --color-system-yellow: #ffcc00;
+
+  /* Separators & fills */
+  --color-separator: rgba(60, 60, 67, 0.29);
+  --color-separator-dark: rgba(84, 84, 88, 0.65);
+  --color-fill-tertiary: rgba(118, 118, 128, 0.12);
+  --color-fill-tertiary-dark: rgba(118, 118, 128, 0.24);
+
+  /* Legacy aliases (backward compat during migration) */
+  --color-ios-bg: var(--color-system-grouped-bg);
+  --color-ios-bg-dark: var(--color-system-grouped-bg-dark);
+  --color-ios-grouped: var(--color-secondary-grouped-bg);
+  --color-ios-grouped-dark: var(--color-secondary-grouped-bg-dark);
+  --color-ios-secondary-dark: var(--color-tertiary-grouped-bg-dark);
+  --color-ios-blue: var(--color-system-blue);
+  --color-ios-green: var(--color-system-green);
+  --color-ios-orange: var(--color-system-orange);
+  --color-ios-red: var(--color-system-red);
+  --color-ios-purple: var(--color-system-purple);
+  --color-ios-label: var(--color-label);
+  --color-ios-label-dark: var(--color-label-dark);
+  --color-ios-secondary-label: var(--color-secondary-label);
+  --color-ios-tertiary-label: var(--color-tertiary-label);
+  --color-ios-separator: rgba(60, 60, 67, 0.12);
+  --color-ios-separator-dark: var(--color-separator-dark);
+
+  /* Spacing */
+  --spacing-screen: 16px;
+  --spacing-screen-lg: 20px;
+  --spacing-section: 24px;
+
+  /* Radius */
+  --radius-card: 12px;
+  --radius-button: 10px;
+  --radius-sheet: 16px;
+  --radius-tab-bar: 24px;
+  --radius-chip: 9999px;
+  --radius-ios-card: var(--radius-card);
+  --radius-ios-button: var(--radius-button);
+  --radius-ios-sheet: var(--radius-sheet);
+
+  /* Glass materials */
+  --glass-bg-light: rgba(255, 255, 255, 0.72);
+  --glass-bg-dark: rgba(30, 30, 30, 0.72);
+  --glass-blur: 24px;
+  --glass-saturate: 180%;
+
+  /* Motion */
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 350ms;
+  --duration-sheet: 450ms;
+  --ease-ios: cubic-bezier(0.2, 0.9, 0.3, 1);
+  --ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Layout */
+  --tab-bar-height: 72px;
+  --nav-compact-height: 44px;
+}

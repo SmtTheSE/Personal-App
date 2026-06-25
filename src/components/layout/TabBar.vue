@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import {
   PhHouse,
   PhCheckSquare,
@@ -8,41 +9,76 @@ import {
   PhBookmarkSimple,
   PhChartLine,
 } from '@phosphor-icons/vue'
+import { useUiStore } from '@/stores/ui'
+import { useHaptics } from '@/composables/useHaptics'
+import { LAYOUT } from '@/design/constants'
+import type { TabRouteName } from '@/design/constants'
 
 const route = useRoute()
 const router = useRouter()
+const uiStore = useUiStore()
+const { tabBarVisible } = storeToRefs(uiStore)
+const { trigger } = useHaptics()
 
 const tabs = [
-  { name: 'dashboard', path: '/', icon: PhHouse, label: 'Today' },
-  { name: 'tasks', path: '/tasks', icon: PhCheckSquare, label: 'Tasks' },
-  { name: 'projects', path: '/projects', icon: PhFolder, label: 'Projects' },
-  { name: 'resources', path: '/resources', icon: PhBookmarkSimple, label: 'Vault' },
-  { name: 'analytics', path: '/analytics', icon: PhChartLine, label: 'Stats' },
+  { name: 'dashboard' as TabRouteName, path: '/', icon: PhHouse, label: 'Today' },
+  { name: 'tasks' as TabRouteName, path: '/tasks', icon: PhCheckSquare, label: 'Tasks' },
+  { name: 'projects' as TabRouteName, path: '/projects', icon: PhFolder, label: 'Projects' },
+  { name: 'resources' as TabRouteName, path: '/resources', icon: PhBookmarkSimple, label: 'Vault' },
+  { name: 'analytics' as TabRouteName, path: '/analytics', icon: PhChartLine, label: 'Stats' },
 ]
 
 const activeTab = computed(() => {
-  const match = tabs.find((t) => t.path === route.path || route.path.startsWith(t.path + '/'))
+  const match = tabs.find(
+    (t) => t.path === route.path || (t.path !== '/' && route.path.startsWith(t.path))
+  )
   return match?.name ?? 'dashboard'
 })
 
+const isHidden = computed(() => !tabBarVisible.value || uiStore.activeSheetCount > 0)
+
 function navigate(path: string) {
-  if (route.path !== path) router.push(path)
+  if (route.path !== path) {
+    trigger('selection')
+    router.push(path)
+  }
 }
 </script>
 
 <template>
-  <nav class="fixed inset-x-0 bottom-0 z-40 border-t border-ios-separator bg-white/80 ios-blur ios-safe-bottom dark:border-ios-separator-dark dark:bg-black/80">
-    <div class="mx-auto flex max-w-lg items-stretch justify-around px-2 pt-1 pb-1">
+  <nav
+    class="pointer-events-none fixed inset-x-0 z-40 transition-transform duration-300 ease-[var(--ease-ios)] ios-safe-bottom"
+    :style="{
+      bottom: `${LAYOUT.tabBarInset}px`,
+      transform: isHidden ? 'translateY(calc(100% + 32px))' : 'translateY(0)',
+    }"
+    aria-label="Main navigation"
+  >
+    <div
+      class="pointer-events-auto mx-auto material-glass-pill flex max-w-lg items-stretch justify-around px-2 py-1.5"
+      :style="{
+        marginLeft: `${LAYOUT.tabBarInset}px`,
+        marginRight: `${LAYOUT.tabBarInset}px`,
+        borderRadius: `${LAYOUT.tabBarInset + 8}px`,
+        minHeight: `${LAYOUT.minTouchTarget}px`,
+      }"
+    >
       <button
         v-for="tab in tabs"
         :key="tab.name"
         type="button"
-        class="flex flex-1 flex-col items-center gap-0.5 py-1 transition-colors"
-        :class="activeTab === tab.name ? 'text-ios-blue' : 'text-ios-tertiary-label'"
+        class="flex flex-1 flex-col items-center justify-center gap-0.5 py-1 press-scale"
+        :class="activeTab === tab.name ? 'text-system-blue' : 'text-tertiary'"
+        :aria-current="activeTab === tab.name ? 'page' : undefined"
+        :aria-label="tab.label"
         @click="navigate(tab.path)"
       >
-        <component :is="tab.icon" :size="24" :weight="activeTab === tab.name ? 'fill' : 'regular'" />
-        <span class="ios-caption font-medium">{{ tab.label }}</span>
+        <component
+          :is="tab.icon"
+          :size="24"
+          :weight="activeTab === tab.name ? 'fill' : 'regular'"
+        />
+        <span class="text-caption-2 font-medium">{{ tab.label }}</span>
       </button>
     </div>
   </nav>

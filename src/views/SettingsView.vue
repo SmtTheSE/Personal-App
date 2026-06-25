@@ -3,12 +3,14 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDark } from '@vueuse/core'
 import { useAuthStore } from '@/stores/auth'
+import PageShell from '@/components/layout/PageShell.vue'
 import NavBar from '@/components/layout/NavBar.vue'
 import IOSListGroup from '@/components/ui/IOSListGroup.vue'
 import IOSListItem from '@/components/ui/IOSListItem.vue'
 import IOSButton from '@/components/ui/IOSButton.vue'
-import IOSTextField from '@/components/ui/IOSTextField.vue'
-import { PhMoon, PhSun, PhSignOut, PhUser, PhTarget } from '@phosphor-icons/vue'
+import IOSSwitch from '@/components/ui/IOSSwitch.vue'
+import { PhMoon, PhSun, PhSignOut, PhTarget } from '@phosphor-icons/vue'
+import { initialsFromString, gradientFromString } from '@/lib/color'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -17,6 +19,9 @@ const isDark = useDark()
 const username = ref(auth.profile?.username ?? '')
 const studyGoal = ref(String(auth.profile?.study_goal_mins ?? 120))
 const saving = ref(false)
+
+const displayName = () => auth.profile?.username ?? 'Student'
+const avatarGradient = () => gradientFromString(displayName())
 
 async function saveProfile() {
   saving.value = true
@@ -37,67 +42,77 @@ async function handleSignOut() {
 </script>
 
 <template>
-  <div>
-    <NavBar title="Settings" large show-back />
+  <PageShell>
+    <template #header>
+      <NavBar title="Settings" large show-back />
+    </template>
 
-    <div class="space-y-6 px-4 py-4">
-      <section>
-        <p class="ios-footnote mb-2 px-1 font-semibold uppercase tracking-wide text-ios-tertiary-label">Profile</p>
-        <div class="space-y-3">
-          <div class="space-y-1">
-            <label class="ios-footnote font-medium uppercase tracking-wide text-ios-tertiary-label px-1">Username</label>
-            <div class="flex items-center gap-3 rounded-[10px] bg-black/5 px-4 py-3 dark:bg-white/10">
-              <PhUser :size="20" class="text-ios-tertiary-label" />
-              <input
-                v-model="username"
-                class="flex-1 bg-transparent ios-subhead text-black outline-none dark:text-white"
-              />
-            </div>
-          </div>
-          <IOSTextField v-model="studyGoal" label="Daily Study Goal (minutes)" type="number" />
-          <IOSButton block :loading="saving" @click="saveProfile">Save Profile</IOSButton>
+    <div class="space-y-6 py-4">
+      <!-- Profile header — Apple ID style -->
+      <div class="flex flex-col items-center px-4 py-6">
+        <div
+          class="flex h-20 w-20 items-center justify-center rounded-full text-2xl font-bold text-white shadow-lg"
+          :style="{ background: avatarGradient() }"
+        >
+          {{ initialsFromString(displayName()) }}
         </div>
-      </section>
+        <h2 class="text-title-2 mt-3 text-primary">{{ displayName() }}</h2>
+        <p class="text-subheadline text-tertiary">{{ auth.user?.email }}</p>
+      </div>
 
-      <section>
-        <p class="ios-footnote mb-2 px-1 font-semibold uppercase tracking-wide text-ios-tertiary-label">Appearance</p>
-        <IOSListGroup>
-          <IOSListItem title="Dark Mode" @click="isDark = !isDark">
-            <template #icon>
-              <component :is="isDark ? PhMoon : PhSun" :size="22" />
-            </template>
-            <template #trailing>
-              <div
-                class="relative h-7 w-12 rounded-full transition-colors"
-                :class="isDark ? 'bg-ios-green' : 'bg-black/20'"
-              >
-                <div
-                  class="absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform"
-                  :class="isDark ? 'translate-x-5' : 'translate-x-0.5'"
-                />
-              </div>
-            </template>
-          </IOSListItem>
-        </IOSListGroup>
-      </section>
+      <IOSListGroup title="Profile">
+        <div class="px-4 py-3">
+          <label class="text-section-header">Username</label>
+          <input
+            v-model="username"
+            class="mt-1 w-full rounded-[10px] fill-tertiary px-4 py-3 text-body text-primary outline-none focus:ring-2 focus:ring-system-blue/30"
+          />
+        </div>
+        <div class="px-4 py-3">
+          <label class="text-section-header">Daily Study Goal (min)</label>
+          <input
+            v-model="studyGoal"
+            type="number"
+            class="mt-1 w-full rounded-[10px] fill-tertiary px-4 py-3 text-body text-primary outline-none focus:ring-2 focus:ring-system-blue/30"
+          />
+        </div>
+      </IOSListGroup>
 
-      <section>
-        <p class="ios-footnote mb-2 px-1 font-semibold uppercase tracking-wide text-ios-tertiary-label">Account</p>
-        <IOSListGroup>
-          <IOSListItem :subtitle="auth.user?.email ?? ''" title="Email">
-            <template #icon>
-              <PhTarget :size="22" />
-            </template>
-          </IOSListItem>
-        </IOSListGroup>
-      </section>
+      <div class="px-4">
+        <IOSButton block :loading="saving" @click="saveProfile">Save Profile</IOSButton>
+      </div>
 
-      <IOSButton variant="destructive" block @click="handleSignOut">
-        <PhSignOut :size="18" class="mr-2" />
-        Sign Out
-      </IOSButton>
+      <IOSListGroup title="Appearance">
+        <IOSListItem title="Dark Mode">
+          <template #icon>
+            <component :is="isDark ? PhMoon : PhSun" :size="22" class="text-system-blue" />
+          </template>
+          <template #trailing>
+            <IOSSwitch
+              :model-value="isDark"
+              label="Dark mode"
+              @update:model-value="isDark = $event"
+            />
+          </template>
+        </IOSListItem>
+      </IOSListGroup>
 
-      <p class="text-center ios-caption text-ios-tertiary-label">Nexus v1.0 · Student OS</p>
+      <IOSListGroup title="Account">
+        <IOSListItem :subtitle="auth.user?.email ?? ''" title="Email">
+          <template #icon>
+            <PhTarget :size="22" class="text-system-blue" />
+          </template>
+        </IOSListItem>
+      </IOSListGroup>
+
+      <div class="px-4">
+        <IOSButton variant="destructive" block @click="handleSignOut">
+          <PhSignOut :size="18" class="mr-2 inline" />
+          Sign Out
+        </IOSButton>
+      </div>
+
+      <p class="text-center text-caption-1 text-tertiary">Nexus v1.0 · Student OS</p>
     </div>
-  </div>
+  </PageShell>
 </template>

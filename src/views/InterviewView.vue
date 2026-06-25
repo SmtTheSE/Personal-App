@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useInterviewStore } from '@/stores/analytics'
+import PageShell from '@/components/layout/PageShell.vue'
 import NavBar from '@/components/layout/NavBar.vue'
 import IOSListGroup from '@/components/ui/IOSListGroup.vue'
 import IOSListItem from '@/components/ui/IOSListItem.vue'
@@ -8,7 +9,9 @@ import IOSButton from '@/components/ui/IOSButton.vue'
 import IOSSheet from '@/components/ui/IOSSheet.vue'
 import IOSTextField from '@/components/ui/IOSTextField.vue'
 import IOSTextArea from '@/components/ui/IOSTextArea.vue'
-import { PhPlus, PhCheckCircle, PhLink } from '@phosphor-icons/vue'
+import IOSEmptyState from '@/components/ui/IOSEmptyState.vue'
+import IOSChip from '@/components/ui/IOSChip.vue'
+import { PhPlus, PhCheckCircle, PhLink, PhCode } from '@phosphor-icons/vue'
 import type { ProblemDifficulty } from '@/types'
 
 const interviewStore = useInterviewStore()
@@ -23,10 +26,10 @@ const notes = ref('')
 
 const difficulties: ProblemDifficulty[] = ['easy', 'medium', 'hard']
 
-const difficultyColors: Record<ProblemDifficulty, string> = {
-  easy: 'bg-ios-green/15 text-ios-green',
-  medium: 'bg-ios-orange/15 text-ios-orange',
-  hard: 'bg-ios-red/15 text-ios-red',
+const difficultyColors: Record<ProblemDifficulty, 'green' | 'orange' | 'red'> = {
+  easy: 'green',
+  medium: 'orange',
+  hard: 'red',
 }
 
 async function addProblem() {
@@ -48,53 +51,51 @@ async function addProblem() {
 }
 
 function openUrl(link: string | null) {
-  if (link) window.open(link, '_blank')
+  if (link) window.open(link, '_blank', 'noopener')
 }
 </script>
 
 <template>
-  <div>
-    <NavBar title="Interview Prep" large show-back>
-      <div class="flex gap-2 px-4 pb-2">
-        <button
-          type="button"
-          class="rounded-full px-3 py-1 ios-caption font-medium transition-colors"
-          :class="!interviewStore.filterDifficulty ? 'bg-ios-blue text-white' : 'bg-black/5 dark:bg-white/10'"
-          @click="interviewStore.filterDifficulty = null"
-        >
-          All
-        </button>
-        <button
-          v-for="d in difficulties"
-          :key="d"
-          type="button"
-          class="rounded-full px-3 py-1 ios-caption font-medium capitalize transition-colors"
-          :class="interviewStore.filterDifficulty === d ? 'bg-ios-blue text-white' : 'bg-black/5 dark:bg-white/10'"
-          @click="interviewStore.filterDifficulty = d"
-        >
-          {{ d }}
-        </button>
-      </div>
-      <div class="flex justify-end px-4 pb-2">
-        <button type="button" class="flex h-8 w-8 items-center justify-center rounded-full bg-ios-blue text-white" @click="showSheet = true">
-          <PhPlus :size="20" weight="bold" />
-        </button>
-      </div>
-    </NavBar>
+  <PageShell>
+    <template #header>
+      <NavBar title="Interview Prep" large show-back>
+        <div class="flex gap-2 px-4 pb-2">
+          <IOSChip label="All" :selected="!interviewStore.filterDifficulty" @click="interviewStore.filterDifficulty = null" />
+          <IOSChip
+            v-for="d in difficulties"
+            :key="d"
+            :label="d"
+            :color="difficultyColors[d]"
+            :selected="interviewStore.filterDifficulty === d"
+            @click="interviewStore.filterDifficulty = d"
+          />
+        </div>
+        <div class="flex justify-end px-4 pb-2">
+          <button
+            type="button"
+            class="flex h-11 w-11 items-center justify-center rounded-full bg-system-blue text-white press-scale"
+            aria-label="Add problem"
+            @click="showSheet = true"
+          >
+            <PhPlus :size="20" weight="bold" />
+          </button>
+        </div>
+      </NavBar>
+    </template>
 
     <div class="space-y-4 px-4 py-4">
-      <div class="flex gap-4">
-        <div class="ios-card flex-1 p-3 text-center">
-          <p class="text-2xl font-bold text-ios-green">{{ interviewStore.solvedCount }}</p>
-          <p class="ios-caption text-ios-tertiary-label">Solved</p>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="surface-elevated p-3 text-center" :style="{ borderRadius: 'var(--radius-card)' }">
+          <p class="text-title-2 font-bold text-system-green">{{ interviewStore.solvedCount }}</p>
+          <p class="text-caption-1 text-tertiary">Solved</p>
         </div>
-        <div class="ios-card flex-1 p-3 text-center">
-          <p class="text-2xl font-bold text-ios-orange">{{ interviewStore.dueForRevisit.length }}</p>
-          <p class="ios-caption text-ios-tertiary-label">To Revisit</p>
+        <div class="surface-elevated p-3 text-center" :style="{ borderRadius: 'var(--radius-card)' }">
+          <p class="text-title-2 font-bold text-system-orange">{{ interviewStore.dueForRevisit.length }}</p>
+          <p class="text-caption-1 text-tertiary">To Revisit</p>
         </div>
       </div>
 
-      <IOSListGroup v-if="interviewStore.filteredProblems.length">
+      <IOSListGroup v-if="interviewStore.filteredProblems.length" :inset="false">
         <IOSListItem
           v-for="problem in interviewStore.filteredProblems"
           :key="problem.id"
@@ -104,48 +105,50 @@ function openUrl(link: string | null) {
         >
           <template #trailing>
             <div class="flex items-center gap-2">
-              <span class="rounded-full px-2 py-0.5 ios-caption font-medium capitalize" :class="difficultyColors[problem.difficulty]">
-                {{ problem.difficulty }}
-              </span>
+              <IOSChip :label="problem.difficulty" :color="difficultyColors[problem.difficulty]" selected />
               <button
                 v-if="!problem.solved_at"
                 type="button"
-                class="text-ios-green"
+                class="text-system-green press-scale"
+                aria-label="Mark solved"
                 @click.stop="interviewStore.markSolved(problem.id)"
               >
                 <PhCheckCircle :size="20" />
               </button>
-              <PhCheckCircle v-else :size="20" weight="fill" class="text-ios-green" />
-              <PhLink v-if="problem.url" :size="16" class="text-ios-tertiary-label" />
+              <PhCheckCircle v-else :size="20" weight="fill" class="text-system-green" />
+              <PhLink v-if="problem.url" :size="16" class="text-tertiary" />
             </div>
           </template>
         </IOSListItem>
       </IOSListGroup>
 
-      <div v-else class="py-16 text-center">
-        <p class="ios-subhead text-ios-tertiary-label">No problems tracked</p>
-        <IOSButton class="mt-4" @click="showSheet = true">Add a problem</IOSButton>
-      </div>
+      <IOSEmptyState
+        v-else
+        title="No problems tracked"
+        subtitle="Log LeetCode-style problems with spaced repetition"
+        :icon="PhCode"
+      >
+        <IOSButton @click="showSheet = true">Add Problem</IOSButton>
+      </IOSEmptyState>
     </div>
 
     <IOSSheet :open="showSheet" title="Add Problem" @close="showSheet = false">
       <div class="space-y-4">
-        <IOSTextField v-model="title" label="Title" placeholder="Two Sum" />
+        <IOSTextField v-model="title" label="Title" placeholder="Two Sum" clearable />
         <IOSTextField v-model="platform" label="Platform" placeholder="LeetCode" />
         <IOSTextField v-model="url" label="URL" placeholder="https://leetcode.com/..." />
-        <div class="space-y-1">
-          <label class="ios-footnote font-medium uppercase tracking-wide text-ios-tertiary-label px-1">Difficulty</label>
+        <div class="space-y-2">
+          <label class="text-section-header px-1">Difficulty</label>
           <div class="flex gap-2">
-            <button
+            <IOSChip
               v-for="d in difficulties"
               :key="d"
-              type="button"
-              class="flex-1 rounded-[10px] py-2 ios-subhead font-medium capitalize"
-              :class="difficulty === d ? 'bg-ios-blue text-white' : 'bg-black/5 dark:bg-white/10'"
+              :label="d"
+              :color="difficultyColors[d]"
+              :selected="difficulty === d"
+              class="flex-1"
               @click="difficulty = d"
-            >
-              {{ d }}
-            </button>
+            />
           </div>
         </div>
         <IOSTextField v-model="topics" label="Topics" placeholder="arrays, hash-map" />
@@ -153,5 +156,5 @@ function openUrl(link: string | null) {
         <IOSButton block @click="addProblem">Add Problem</IOSButton>
       </div>
     </IOSSheet>
-  </div>
+  </PageShell>
 </template>

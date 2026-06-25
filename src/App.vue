@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
+import { RouterView, useRoute } from 'vue-router'
 import { useDark } from '@vueuse/core'
 
 useDark({
@@ -9,11 +9,13 @@ useDark({
   valueLight: '',
   storageKey: 'nexus-dark-mode',
 })
+
+const route = useRoute()
 </script>
 
 <template>
-  <RouterView v-slot="{ Component, route }">
-    <Transition :name="route.meta.transition as string || 'fade'" mode="out-in">
+  <RouterView v-slot="{ Component }">
+    <Transition :name="(route.meta.transition as string) || 'fade'" mode="out-in">
       <component :is="Component" :key="route.path" />
     </Transition>
   </RouterView>

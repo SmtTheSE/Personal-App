@@ -1,25 +1,46 @@
 <script setup lang="ts">
-defineProps<{
+import { computed } from 'vue'
+import { PhX } from '@phosphor-icons/vue'
+
+const props = defineProps<{
   modelValue: string
   placeholder?: string
   type?: string
   label?: string
+  clearable?: boolean
 }>()
 
-defineEmits<{ 'update:modelValue': [value: string] }>()
+const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
+
+const showClear = computed(
+  () => props.clearable && props.modelValue.length > 0
+)
+
+function clear() {
+  emit('update:modelValue', '')
+}
 </script>
 
 <template>
   <div class="space-y-1">
-    <label v-if="label" class="ios-footnote font-medium uppercase tracking-wide text-ios-tertiary-label px-1">
-      {{ label }}
-    </label>
-    <input
-      :type="type ?? 'text'"
-      :value="modelValue"
-      :placeholder="placeholder"
-      class="w-full rounded-[10px] bg-black/5 px-4 py-3 text-[17px] text-black outline-none placeholder:text-ios-tertiary-label focus:ring-2 focus:ring-ios-blue/30 dark:bg-white/10 dark:text-white"
-      @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
-    />
+    <label v-if="label" class="text-section-header px-1">{{ label }}</label>
+    <div class="relative">
+      <input
+        :type="type ?? 'text'"
+        :value="modelValue"
+        :placeholder="placeholder"
+        class="w-full rounded-[10px] fill-tertiary px-4 py-3 pr-10 text-body text-primary outline-none placeholder:text-tertiary focus:ring-2 focus:ring-system-blue/30"
+        @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+      />
+      <button
+        v-if="showClear"
+        type="button"
+        class="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full fill-tertiary text-tertiary press-scale"
+        aria-label="Clear"
+        @click="clear"
+      >
+        <PhX :size="14" weight="bold" />
+      </button>
+    </div>
   </div>
 </template>

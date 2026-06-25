@@ -5,8 +5,7 @@ import TabBar from '@/components/layout/TabBar.vue'
 import { useProjectsStore } from '@/stores/projects'
 import { useResourcesStore } from '@/stores/resources'
 import { useTasksStore } from '@/stores/tasks'
-import { useAnalyticsStore } from '@/stores/analytics'
-import { useInterviewStore } from '@/stores/analytics'
+import { useAnalyticsStore, useInterviewStore } from '@/stores/analytics'
 
 const projectsStore = useProjectsStore()
 const resourcesStore = useResourcesStore()
@@ -31,7 +30,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-dvh bg-ios-bg dark:bg-ios-bg-dark pb-20">
+  <div class="min-h-dvh bg-[var(--color-system-grouped-bg)] dark:bg-[var(--color-system-grouped-bg-dark)]">
     <RouterView />
     <TabBar />
   </div>
