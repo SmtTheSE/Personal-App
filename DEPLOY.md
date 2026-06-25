@@ -1,4 +1,4 @@
-# Deploy Nexus to Netlify + GitHub OAuth
+# Deploy Nexus to Vercel + GitHub OAuth
 
 ## 1. Database (one-time)
 
@@ -9,7 +9,7 @@ Run `supabase/schema.sql` in [Supabase SQL Editor](https://supabase.com/dashboar
 1. Go to [GitHub Developer Settings → OAuth Apps → New](https://github.com/settings/applications/new)
 2. Fill in:
    - **Application name:** Nexus Student OS
-   - **Homepage URL:** `https://personal-app-nexus.netlify.app` (update after first Netlify deploy if different)
+   - **Homepage URL:** `https://your-app.vercel.app` (update after first Vercel deploy)
    - **Authorization callback URL:** `https://qeocmqftodajblvajnhg.supabase.co/auth/v1/callback`
 3. Click **Register application**
 4. Copy the **Client ID**
@@ -28,43 +28,43 @@ In [Supabase → Authentication → URL Configuration](https://supabase.com/dash
 
 | Setting | Value |
 |---------|-------|
-| Site URL | `https://YOUR-NETLIFY-SITE.netlify.app` |
+| Site URL | `https://YOUR-APP.vercel.app` |
 | Redirect URLs | `http://localhost:5173/**` |
-| | `https://YOUR-NETLIFY-SITE.netlify.app/**` |
+| | `https://YOUR-APP.vercel.app/**` |
 
-## 4. Netlify Deploy
+## 4. Vercel Deploy
 
 ### Option A — Connect GitHub repo (recommended)
 
-1. Push this repo to [github.com/SmtTheSE/Personal-App](https://github.com/SmtTheSE/Personal-App)
-2. Go to [Netlify](https://app.netlify.com) → **Add new site** → **Import an existing project**
-3. Connect **GitHub** → select `SmtTheSE/Personal-App`
-4. Build settings (auto-detected from `netlify.toml`):
+1. Repo is at [github.com/SmtTheSE/Personal-App](https://github.com/SmtTheSE/Personal-App)
+2. Go to [vercel.com/new](https://vercel.com/new) → **Import** `SmtTheSE/Personal-App`
+3. Vercel auto-detects Vite from `vercel.json`:
+   - Framework: Vite
    - Build command: `npm run build`
-   - Publish directory: `dist`
-5. Add **Environment variables** (Site settings → Environment variables):
+   - Output directory: `dist`
+4. Add **Environment Variables** before deploying:
 
 | Key | Value |
 |-----|-------|
 | `VITE_SUPABASE_URL` | `https://qeocmqftodajblvajnhg.supabase.co` |
 | `VITE_SUPABASE_ANON_KEY` | your Supabase anon key |
 
-6. Deploy → copy your Netlify URL
-7. Update GitHub OAuth **Homepage URL** and Supabase **Site URL** / **Redirect URLs** with the real Netlify URL
+5. Click **Deploy** → copy your Vercel URL (e.g. `https://personal-app-xxx.vercel.app`)
+6. Update GitHub OAuth **Homepage URL** and Supabase **Site URL** / **Redirect URLs** with your real Vercel URL
 
-### Option B — Netlify CLI
+### Option B — Vercel CLI
 
 ```bash
-npm install -g netlify-cli
-netlify login
-netlify init
-netlify env:set VITE_SUPABASE_URL "https://qeocmqftodajblvajnhg.supabase.co"
-netlify env:set VITE_SUPABASE_ANON_KEY "your-anon-key"
-netlify deploy --prod
+npm install -g vercel
+vercel login
+vercel link
+vercel env add VITE_SUPABASE_URL
+vercel env add VITE_SUPABASE_ANON_KEY
+vercel --prod
 ```
 
 ## 5. Verify
 
 - [ ] Email sign-up / sign-in works
-- [ ] GitHub OAuth redirects back to your Netlify site
+- [ ] GitHub OAuth redirects back to your Vercel site
 - [ ] Tasks, projects, resources load after login

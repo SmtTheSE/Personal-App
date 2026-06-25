@@ -41,23 +41,23 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 
 Run `supabase/schema.sql` in your Supabase SQL Editor. This creates all tables with Row Level Security policies.
 
-## Deploy to Netlify
+## Deploy to Vercel
 
-This repo includes `netlify.toml` — connect it to [Netlify](https://app.netlify.com) and set these environment variables:
+This repo includes `vercel.json` — import it at [vercel.com/new](https://vercel.com/new) and set these environment variables:
 
 | Variable | Value |
 |----------|-------|
 | `VITE_SUPABASE_URL` | Your Supabase project URL |
 | `VITE_SUPABASE_ANON_KEY` | Your Supabase anon key |
 
-See **[DEPLOY.md](./DEPLOY.md)** for full Netlify + GitHub OAuth setup.
+See **[DEPLOY.md](./DEPLOY.md)** for full Vercel + GitHub OAuth setup.
 
 ## GitHub OAuth
 
 1. Create a [GitHub OAuth App](https://github.com/settings/applications/new)
 2. Callback URL: `https://YOUR-PROJECT.supabase.co/auth/v1/callback`
 3. Enable GitHub in Supabase → Authentication → Providers
-4. Add redirect URLs for `http://localhost:5173/**` and your Netlify URL
+4. Add redirect URLs for `http://localhost:5173/**` and your Vercel URL
 
 ## Local development
 
