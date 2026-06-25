@@ -1,4 +1,4 @@
-import { ref, computed, onMounted, onUnmounted, type Ref } from 'vue'
+import { ref, computed, watch, onUnmounted, type Ref } from 'vue'
 
 export interface SwipeAction {
   id: string
@@ -22,6 +22,7 @@ export function useSwipeGesture(
 
   let startX = 0
   let startOffset = 0
+  let attachedEl: HTMLElement | null = null
 
   const leadingActions = computed(() => actions.filter((a) => a.side === 'leading'))
   const trailingActions = computed(() => actions.filter((a) => a.side === 'trailing'))
@@ -59,21 +60,32 @@ export function useSwipeGesture(
     }
   }
 
-  onMounted(() => {
-    const el = rowRef.value
-    if (!el) return
+  function attach(el: HTMLElement) {
+    detach()
+    attachedEl = el
     el.addEventListener('touchstart', onTouchStart, { passive: true })
     el.addEventListener('touchmove', onTouchMove, { passive: true })
     el.addEventListener('touchend', onTouchEnd, { passive: true })
-  })
+  }
 
-  onUnmounted(() => {
-    const el = rowRef.value
-    if (!el) return
-    el.removeEventListener('touchstart', onTouchStart)
-    el.removeEventListener('touchmove', onTouchMove)
-    el.removeEventListener('touchend', onTouchEnd)
-  })
+  function detach() {
+    if (!attachedEl) return
+    attachedEl.removeEventListener('touchstart', onTouchStart)
+    attachedEl.removeEventListener('touchmove', onTouchMove)
+    attachedEl.removeEventListener('touchend', onTouchEnd)
+    attachedEl = null
+  }
+
+  watch(
+    rowRef,
+    (el) => {
+      if (el) attach(el)
+      else detach()
+    },
+    { immediate: true }
+  )
+
+  onUnmounted(detach)
 
   async function triggerAction(action: SwipeAction) {
     await action.onAction()

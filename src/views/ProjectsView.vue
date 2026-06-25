@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProjectsStore } from '@/stores/projects'
+import { useAsyncAction } from '@/composables/useAsyncAction'
 import { gradientFromString, initialsFromString } from '@/lib/color'
 import PageShell from '@/components/layout/PageShell.vue'
 import NavBar from '@/components/layout/NavBar.vue'
@@ -16,6 +17,7 @@ import type { ProjectStatus } from '@/types'
 
 const projectsStore = useProjectsStore()
 const router = useRouter()
+const { run } = useAsyncAction()
 
 const showSheet = ref(false)
 const viewMode = ref<'list' | 'grid'>('list')
@@ -34,13 +36,18 @@ const statusColors: Record<ProjectStatus, 'green' | 'orange' | 'blue' | 'neutral
 
 async function createProject() {
   if (!title.value.trim()) return
-  const project = await projectsStore.createProject({
-    title: title.value.trim(),
-    description: description.value || undefined,
-    tech_stack: techStack.value ? techStack.value.split(',').map((t) => t.trim()).filter(Boolean) : [],
-    repo_url: repoUrl.value || undefined,
-    status: status.value,
-  })
+  const project = await run(
+    () =>
+      projectsStore.createProject({
+        title: title.value.trim(),
+        description: description.value || undefined,
+        tech_stack: techStack.value ? techStack.value.split(',').map((t) => t.trim()).filter(Boolean) : [],
+        repo_url: repoUrl.value || undefined,
+        status: status.value,
+      }),
+    { successMessage: 'Project created' }
+  )
+  if (!project) return
   title.value = ''
   description.value = ''
   techStack.value = ''
@@ -77,7 +84,7 @@ async function createProject() {
           </div>
           <button
             type="button"
-            class="flex h-11 w-11 items-center justify-center rounded-full bg-system-blue text-white press-scale"
+            class="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-system-blue)] text-white press-scale"
             aria-label="Add project"
             @click="showSheet = true"
           >
@@ -163,7 +170,7 @@ async function createProject() {
         <IOSTextArea v-model="description" label="Description" placeholder="What are you building?" />
         <IOSTextField v-model="techStack" label="Tech Stack" placeholder="Vue, Python (comma-separated)" />
         <IOSTextField v-model="repoUrl" label="Repository URL" placeholder="https://github.com/..." />
-        <IOSButton block @click="createProject">Create Project</IOSButton>
+        <IOSButton type="button" block variant="filled" @click="createProject">Create Project</IOSButton>
       </div>
     </IOSSheet>
   </PageShell>

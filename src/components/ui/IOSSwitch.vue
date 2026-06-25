@@ -16,7 +16,7 @@ defineProps<{
     :disabled="disabled"
     class="relative inline-flex h-[31px] w-[51px] shrink-0 items-center rounded-full transition-colors duration-200 disabled:opacity-50"
     :class="model ? 'bg-system-green' : 'fill-tertiary'"
-    @click="model = !model"
+    @click.stop="model = !model"
   >
     <span
       class="inline-block h-[27px] w-[27px] rounded-full bg-white shadow transition-transform duration-200"

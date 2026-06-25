@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { format, parseISO, isToday, isPast, startOfDay } from 'date-fns'
 import { useTasksStore } from '@/stores/tasks'
 import { useHaptics } from '@/composables/useHaptics'
+import { useAsyncAction } from '@/composables/useAsyncAction'
 import PageShell from '@/components/layout/PageShell.vue'
 import NavBar from '@/components/layout/NavBar.vue'
 import IOSListGroup from '@/components/ui/IOSListGroup.vue'
@@ -19,6 +20,7 @@ import type { SwipeAction } from '@/composables/useSwipeGesture'
 
 const tasksStore = useTasksStore()
 const { trigger } = useHaptics()
+const { run } = useAsyncAction()
 
 const showSheet = ref(false)
 const newTitle = ref('')
@@ -80,11 +82,16 @@ function swipeActions(task: Task): SwipeAction[] {
 
 async function addTask() {
   if (!newTitle.value.trim()) return
-  await tasksStore.createTask({
-    title: newTitle.value.trim(),
-    priority: newPriority.value,
-    due_date: newDueDate.value || undefined,
-  })
+  const result = await run(
+    () =>
+      tasksStore.createTask({
+        title: newTitle.value.trim(),
+        priority: newPriority.value,
+        due_date: newDueDate.value || undefined,
+      }),
+    { successMessage: 'Task added' }
+  )
+  if (!result) return
   newTitle.value = ''
   newPriority.value = 'medium'
   newDueDate.value = ''
@@ -93,7 +100,7 @@ async function addTask() {
 }
 
 async function toggleTask(id: string) {
-  await tasksStore.toggleComplete(id)
+  await run(() => tasksStore.toggleComplete(id))
   trigger('success')
 }
 </script>
@@ -105,7 +112,7 @@ async function toggleTask(id: string) {
         <div class="flex justify-end px-4 pb-2">
           <button
             type="button"
-            class="flex h-11 w-11 items-center justify-center rounded-full bg-system-blue text-white press-scale"
+            class="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-system-blue)] text-white press-scale"
             aria-label="Add task"
             @click="showSheet = true"
           >
@@ -188,7 +195,7 @@ async function toggleTask(id: string) {
             />
           </div>
         </div>
-        <IOSButton block @click="addTask">Add Task</IOSButton>
+        <IOSButton type="button" block variant="filled" @click="addTask">Add Task</IOSButton>
       </div>
     </IOSSheet>
   </PageShell>

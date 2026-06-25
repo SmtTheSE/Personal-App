@@ -2,6 +2,7 @@
 import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProjectsStore } from '@/stores/projects'
+import { useAsyncAction } from '@/composables/useAsyncAction'
 import { gradientFromString, initialsFromString } from '@/lib/color'
 import PageShell from '@/components/layout/PageShell.vue'
 import NavBar from '@/components/layout/NavBar.vue'
@@ -14,6 +15,7 @@ import type { ProjectStatus } from '@/types'
 const route = useRoute()
 const router = useRouter()
 const projectsStore = useProjectsStore()
+const { run } = useAsyncAction()
 
 const projectId = computed(() => route.params.id as string)
 const project = computed(() => projectsStore.getProjectById(projectId.value))
@@ -26,13 +28,22 @@ const statusOptions: ProjectStatus[] = ['active', 'paused', 'completed', 'archiv
 
 async function updateStatus(s: ProjectStatus) {
   if (!project.value) return
-  await projectsStore.updateProject(project.value.id, { status: s })
+  await run(() => projectsStore.updateProject(project.value!.id, { status: s }), {
+    successMessage: 'Status updated',
+  })
 }
 
 async function deleteProject() {
   if (!project.value) return
-  await projectsStore.deleteProject(project.value.id)
-  router.push('/projects')
+  const id = project.value.id
+  const result = await run(
+    async () => {
+      await projectsStore.deleteProject(id)
+      return true
+    },
+    { successMessage: 'Project deleted' }
+  )
+  if (result) router.push('/projects')
 }
 </script>
 

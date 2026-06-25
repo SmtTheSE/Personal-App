@@ -12,6 +12,12 @@ const router = createRouter({
       meta: { guest: true, transition: 'fade' },
     },
     {
+      path: '/onboarding',
+      name: 'onboarding',
+      component: () => import('@/views/OnboardingView.vue'),
+      meta: { requiresAuth: true, onboarding: true, transition: 'fade' },
+    },
+    {
       path: '/',
       component: () => import('@/layouts/AppLayout.vue'),
       meta: { requiresAuth: true },
@@ -73,9 +79,7 @@ const router = createRouter({
   ],
 })
 
-let previousRouteName: string | undefined
-
-router.beforeEach(async (to, from) => {
+router.beforeEach(async (to) => {
   const auth = useAuthStore()
 
   if (!auth.initialized) {
@@ -87,24 +91,25 @@ router.beforeEach(async (to, from) => {
   }
 
   if (to.meta.guest && auth.isAuthenticated) {
+    return auth.needsOnboarding ? { name: 'onboarding' } : { name: 'dashboard' }
+  }
+
+  if (
+    auth.isAuthenticated &&
+    auth.needsOnboarding &&
+    !to.meta.onboarding &&
+    to.name !== 'auth'
+  ) {
+    return { name: 'onboarding' }
+  }
+
+  if (to.name === 'onboarding' && auth.isAuthenticated && !auth.needsOnboarding) {
     return { name: 'dashboard' }
   }
 
-  // Dynamic transition: push vs pop for stack navigation
-  if (to.meta.isTab && from.meta?.isTab) {
+  if (to.meta.isTab && router.currentRoute.value.meta?.isTab) {
     to.meta.transition = 'tab-fade'
-  } else if (
-    from.name &&
-    to.name &&
-    !to.meta.isTab &&
-    typeof from.name === 'string' &&
-    typeof to.name === 'string'
-  ) {
-    const isPop = previousRouteName === to.name
-    to.meta.transition = isPop ? 'slide-pop' : 'slide-push'
   }
-
-  previousRouteName = from.name as string | undefined
 })
 
 export { TAB_ROUTES }

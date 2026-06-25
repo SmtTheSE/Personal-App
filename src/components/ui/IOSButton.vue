@@ -20,25 +20,30 @@ withDefaults(
     type: 'button',
   }
 )
+
+const emit = defineEmits<{
+  click: [event: MouseEvent]
+}>()
 </script>
 
 <template>
   <button
     :type="type"
-    class="inline-flex items-center justify-center font-semibold press-scale disabled:opacity-50 disabled:pointer-events-none"
+    class="inline-flex cursor-pointer items-center justify-center font-semibold press-scale disabled:cursor-not-allowed disabled:opacity-50"
     :class="[
       block ? 'w-full' : '',
       size === 'sm' ? 'h-9 px-3 text-subheadline rounded-lg' : '',
-      size === 'md' ? `h-[${LAYOUT.minTouchTarget}px] px-5 text-body rounded-[10px]` : '',
+      size === 'md' ? 'px-5 text-body rounded-[10px]' : '',
       size === 'lg' ? 'h-[50px] px-6 text-body rounded-[12px]' : '',
-      variant === 'filled' ? 'bg-system-blue text-white' : '',
-      variant === 'borderedProminent' ? 'bg-system-blue/15 text-system-blue dark:bg-system-blue/25' : '',
-      variant === 'bordered' ? 'border border-separator bg-transparent text-system-blue dark:border-separator-dark' : '',
-      variant === 'plain' ? 'bg-transparent text-system-blue' : '',
-      variant === 'destructive' ? 'bg-system-red/12 text-system-red' : '',
+      variant === 'filled' ? 'bg-[var(--color-system-blue)] text-white' : '',
+      variant === 'borderedProminent' ? 'bg-[var(--color-system-blue)] text-white' : '',
+      variant === 'bordered' ? 'border border-[var(--color-separator)] bg-transparent text-[var(--color-system-blue)]' : '',
+      variant === 'plain' ? 'bg-transparent text-[var(--color-system-blue)]' : '',
+      variant === 'destructive' ? 'bg-[var(--color-system-red)]/12 text-[var(--color-system-red)]' : '',
     ]"
     :style="size === 'md' ? { minHeight: `${LAYOUT.minTouchTarget}px` } : undefined"
     :disabled="disabled || loading"
+    @click="emit('click', $event)"
   >
     <span
       v-if="loading"

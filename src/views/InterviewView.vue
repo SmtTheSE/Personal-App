@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useInterviewStore } from '@/stores/analytics'
+import { useAsyncAction } from '@/composables/useAsyncAction'
 import PageShell from '@/components/layout/PageShell.vue'
 import NavBar from '@/components/layout/NavBar.vue'
 import IOSListGroup from '@/components/ui/IOSListGroup.vue'
@@ -15,6 +16,7 @@ import { PhPlus, PhCheckCircle, PhLink, PhCode } from '@phosphor-icons/vue'
 import type { ProblemDifficulty } from '@/types'
 
 const interviewStore = useInterviewStore()
+const { run } = useAsyncAction()
 
 const showSheet = ref(false)
 const title = ref('')
@@ -34,14 +36,19 @@ const difficultyColors: Record<ProblemDifficulty, 'green' | 'orange' | 'red'> = 
 
 async function addProblem() {
   if (!title.value.trim()) return
-  await interviewStore.createProblem({
-    title: title.value.trim(),
-    difficulty: difficulty.value,
-    platform: platform.value || undefined,
-    url: url.value || undefined,
-    topics: topics.value ? topics.value.split(',').map((t) => t.trim()).filter(Boolean) : [],
-    notes: notes.value || undefined,
-  })
+  const result = await run(
+    () =>
+      interviewStore.createProblem({
+        title: title.value.trim(),
+        difficulty: difficulty.value,
+        platform: platform.value || undefined,
+        url: url.value || undefined,
+        topics: topics.value ? topics.value.split(',').map((t) => t.trim()).filter(Boolean) : [],
+        notes: notes.value || undefined,
+      }),
+    { successMessage: 'Problem added' }
+  )
+  if (!result) return
   title.value = ''
   platform.value = ''
   url.value = ''

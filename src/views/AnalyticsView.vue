@@ -4,6 +4,7 @@ import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Tooltip } fro
 import { Bar } from 'vue-chartjs'
 import { format, subDays } from 'date-fns'
 import { useAnalyticsStore } from '@/stores/analytics'
+import { useAsyncAction } from '@/composables/useAsyncAction'
 import { useAuthStore } from '@/stores/auth'
 import { useTasksStore } from '@/stores/tasks'
 import PageShell from '@/components/layout/PageShell.vue'
@@ -21,6 +22,7 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip)
 const analyticsStore = useAnalyticsStore()
 const authStore = useAuthStore()
 const tasksStore = useTasksStore()
+const { run } = useAsyncAction()
 
 const showSheet = ref(false)
 const topic = ref('')
@@ -64,7 +66,11 @@ const chartOptions = {
 
 async function logSession() {
   if (!topic.value.trim()) return
-  await analyticsStore.logSession(topic.value.trim(), parseInt(duration.value) || 30)
+  const result = await run(
+    () => analyticsStore.logSession(topic.value.trim(), parseInt(duration.value) || 30),
+    { successMessage: 'Session logged' }
+  )
+  if (!result) return
   topic.value = ''
   duration.value = '30'
   showSheet.value = false

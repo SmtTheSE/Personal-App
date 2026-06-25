@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useResourcesStore } from '@/stores/resources'
+import { useAsyncAction } from '@/composables/useAsyncAction'
 import PageShell from '@/components/layout/PageShell.vue'
 import NavBar from '@/components/layout/NavBar.vue'
 import IOSListGroup from '@/components/ui/IOSListGroup.vue'
@@ -17,6 +18,7 @@ import { PhPlus, PhStar, PhLink, PhBookmarkSimple } from '@phosphor-icons/vue'
 import type { ResourceType } from '@/types'
 
 const resourcesStore = useResourcesStore()
+const { run } = useAsyncAction()
 
 const showSheet = ref(false)
 const title = ref('')
@@ -53,13 +55,18 @@ function openResourceUrl(link: string | null) {
 
 async function addResource() {
   if (!title.value.trim()) return
-  await resourcesStore.createResource({
-    title: title.value.trim(),
-    url: url.value || undefined,
-    type: type.value,
-    tags: tags.value ? tags.value.split(',').map((t) => t.trim()).filter(Boolean) : [],
-    notes: notes.value || undefined,
-  })
+  const result = await run(
+    () =>
+      resourcesStore.createResource({
+        title: title.value.trim(),
+        url: url.value || undefined,
+        type: type.value,
+        tags: tags.value ? tags.value.split(',').map((t) => t.trim()).filter(Boolean) : [],
+        notes: notes.value || undefined,
+      }),
+    { successMessage: 'Resource saved' }
+  )
+  if (!result) return
   title.value = ''
   url.value = ''
   type.value = 'article'
@@ -165,7 +172,7 @@ async function addResource() {
         </div>
         <IOSTextField v-model="tags" label="Tags" placeholder="ml, python (comma-separated)" />
         <IOSTextArea v-model="notes" label="Notes" placeholder="Key takeaways..." />
-        <IOSButton block @click="addResource">Save Resource</IOSButton>
+        <IOSButton type="button" block variant="filled" @click="addResource">Save Resource</IOSButton>
       </div>
     </IOSSheet>
   </PageShell>

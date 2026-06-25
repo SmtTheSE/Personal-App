@@ -32,7 +32,7 @@ defineEmits<{ click: [] }>()
         <slot name="subtitle">{{ subtitle }}</slot>
       </p>
     </div>
-    <div v-if="$slots.trailing" class="shrink-0 pb-3">
+    <div v-if="$slots.trailing" class="shrink-0 pb-3" @click.stop>
       <slot name="trailing" />
     </div>
     <PhCaretRight

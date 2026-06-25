@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDark } from '@vueuse/core'
 import { useAuthStore } from '@/stores/auth'
+import { useAsyncAction } from '@/composables/useAsyncAction'
 import PageShell from '@/components/layout/PageShell.vue'
 import NavBar from '@/components/layout/NavBar.vue'
 import IOSListGroup from '@/components/ui/IOSListGroup.vue'
@@ -15,24 +16,36 @@ import { initialsFromString, gradientFromString } from '@/lib/color'
 const auth = useAuthStore()
 const router = useRouter()
 const isDark = useDark()
+const { run } = useAsyncAction()
 
 const username = ref(auth.profile?.username ?? '')
 const studyGoal = ref(String(auth.profile?.study_goal_mins ?? 120))
 const saving = ref(false)
 
-const displayName = () => auth.profile?.username ?? 'Student'
-const avatarGradient = () => gradientFromString(displayName())
+watch(
+  () => auth.profile,
+  (profile) => {
+    if (profile) {
+      username.value = profile.username ?? ''
+      studyGoal.value = String(profile.study_goal_mins ?? 120)
+    }
+  },
+  { immediate: true }
+)
+
+const displayName = () => auth.profile?.username ?? auth.user?.email?.split('@')[0] ?? 'Student'
 
 async function saveProfile() {
   saving.value = true
-  try {
-    await auth.updateProfile({
-      username: username.value,
-      study_goal_mins: parseInt(studyGoal.value) || 120,
-    })
-  } finally {
-    saving.value = false
-  }
+  await run(
+    () =>
+      auth.updateProfile({
+        username: username.value,
+        study_goal_mins: parseInt(studyGoal.value) || 120,
+      }),
+    { successMessage: 'Profile saved' }
+  )
+  saving.value = false
 }
 
 async function handleSignOut() {
@@ -48,11 +61,10 @@ async function handleSignOut() {
     </template>
 
     <div class="space-y-6 py-4">
-      <!-- Profile header — Apple ID style -->
       <div class="flex flex-col items-center px-4 py-6">
         <div
           class="flex h-20 w-20 items-center justify-center rounded-full text-2xl font-bold text-white shadow-lg"
-          :style="{ background: avatarGradient() }"
+          :style="{ background: gradientFromString(displayName()) }"
         >
           {{ initialsFromString(displayName()) }}
         </div>
@@ -65,7 +77,8 @@ async function handleSignOut() {
           <label class="text-section-header">Username</label>
           <input
             v-model="username"
-            class="mt-1 w-full rounded-[10px] fill-tertiary px-4 py-3 text-body text-primary outline-none focus:ring-2 focus:ring-system-blue/30"
+            class="mt-1 w-full rounded-[10px] fill-tertiary px-4 py-3 text-body text-primary outline-none focus:ring-2 focus:ring-[var(--color-system-blue)]/30"
+            autocomplete="username"
           />
         </div>
         <div class="px-4 py-3">
@@ -73,26 +86,31 @@ async function handleSignOut() {
           <input
             v-model="studyGoal"
             type="number"
-            class="mt-1 w-full rounded-[10px] fill-tertiary px-4 py-3 text-body text-primary outline-none focus:ring-2 focus:ring-system-blue/30"
+            min="1"
+            class="mt-1 w-full rounded-[10px] fill-tertiary px-4 py-3 text-body text-primary outline-none focus:ring-2 focus:ring-[var(--color-system-blue)]/30"
           />
         </div>
       </IOSListGroup>
 
       <div class="px-4">
-        <IOSButton block :loading="saving" @click="saveProfile">Save Profile</IOSButton>
+        <IOSButton block variant="filled" :loading="saving" @click="saveProfile">
+          Save Profile
+        </IOSButton>
       </div>
 
       <IOSListGroup title="Appearance">
-        <IOSListItem title="Dark Mode">
+        <IOSListItem title="Dark Mode" @click.prevent>
           <template #icon>
-            <component :is="isDark ? PhMoon : PhSun" :size="22" class="text-system-blue" />
+            <component :is="isDark ? PhMoon : PhSun" :size="22" class="text-[var(--color-system-blue)]" />
           </template>
           <template #trailing>
-            <IOSSwitch
-              :model-value="isDark"
-              label="Dark mode"
-              @update:model-value="isDark = $event"
-            />
+            <div @click.stop>
+              <IOSSwitch
+                :model-value="!!isDark"
+                label="Dark mode"
+                @update:model-value="isDark = $event"
+              />
+            </div>
           </template>
         </IOSListItem>
       </IOSListGroup>
@@ -100,7 +118,7 @@ async function handleSignOut() {
       <IOSListGroup title="Account">
         <IOSListItem :subtitle="auth.user?.email ?? ''" title="Email">
           <template #icon>
-            <PhTarget :size="22" class="text-system-blue" />
+            <PhTarget :size="22" class="text-[var(--color-system-blue)]" />
           </template>
         </IOSListItem>
       </IOSListGroup>
