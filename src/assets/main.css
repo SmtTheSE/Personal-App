@@ -1,0 +1,155 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+
+  --color-ios-bg: #f2f2f7;
+  --color-ios-bg-dark: #000000;
+  --color-ios-grouped: #ffffff;
+  --color-ios-grouped-dark: #1c1c1e;
+  --color-ios-secondary: #ffffff;
+  --color-ios-secondary-dark: #2c2c2e;
+  --color-ios-blue: #007aff;
+  --color-ios-green: #34c759;
+  --color-ios-orange: #ff9500;
+  --color-ios-red: #ff3b30;
+  --color-ios-purple: #af52de;
+  --color-ios-label: #000000;
+  --color-ios-label-dark: #ffffff;
+  --color-ios-secondary-label: #3c3c43;
+  --color-ios-tertiary-label: #8e8e93;
+  --color-ios-separator: rgba(60, 60, 67, 0.12);
+  --color-ios-separator-dark: rgba(84, 84, 88, 0.65);
+
+  --radius-ios-card: 12px;
+  --radius-ios-button: 10px;
+  --radius-ios-sheet: 16px;
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply font-sans text-[17px] leading-[22px] antialiased;
+    background-color: var(--color-ios-bg);
+    color: var(--color-ios-label);
+    overscroll-behavior: none;
+  }
+
+  .dark body {
+    background-color: var(--color-ios-bg-dark);
+    color: var(--color-ios-label-dark);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+}
+
+@layer utilities {
+  .ios-blur {
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+  }
+
+  .ios-safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .ios-safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .ios-card {
+    background: var(--color-ios-grouped);
+    border-radius: var(--radius-ios-card);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+
+  .dark .ios-card {
+    background: var(--color-ios-grouped-dark);
+    box-shadow: none;
+  }
+
+  .ios-inset-group {
+    background: var(--color-ios-grouped);
+    border-radius: var(--radius-ios-card);
+    overflow: hidden;
+  }
+
+  .dark .ios-inset-group {
+    background: var(--color-ios-secondary-dark);
+  }
+
+  .ios-large-title {
+    @apply text-[34px] font-bold leading-[41px] tracking-[-0.4px];
+  }
+
+  .ios-title2 {
+    @apply text-[22px] font-bold leading-[28px];
+  }
+
+  .ios-headline {
+    @apply text-[17px] font-semibold leading-[22px];
+  }
+
+  .ios-subhead {
+    @apply text-[15px] leading-[20px];
+  }
+
+  .ios-footnote {
+    @apply text-[13px] leading-[18px];
+  }
+
+  .ios-caption {
+    @apply text-[12px] leading-[16px];
+  }
+
+  .slide-enter-active,
+  .slide-leave-active {
+    transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease;
+  }
+
+  .slide-enter-from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  .slide-leave-to {
+    transform: translateX(-30%);
+    opacity: 0;
+  }
+
+  .fade-enter-active,
+  .fade-leave-active {
+    transition: opacity 0.2s ease;
+  }
+
+  .fade-enter-from,
+  .fade-leave-to {
+    opacity: 0;
+  }
+
+  .sheet-enter-active,
+  .sheet-leave-active {
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .sheet-enter-from,
+  .sheet-leave-to {
+    transform: translateY(100%);
+  }
+}
+
+/* Custom scrollbar — iOS-like hidden */
+::-webkit-scrollbar {
+  display: none;
+}
+
+input, textarea, select {
+  font-size: 17px;
+}
