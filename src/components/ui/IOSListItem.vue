@@ -16,7 +16,7 @@ defineEmits<{ click: [] }>()
 <template>
   <button
     type="button"
-    class="flex w-full items-center gap-3 px-4 text-left transition-colors active:fill-tertiary press-scale"
+    class="flex w-full items-center gap-3 bg-transparent px-4 text-left transition-colors active:opacity-80 press-scale"
     :class="destructive ? 'text-system-red' : ''"
     :style="{ minHeight: `${LAYOUT.listRowHeightRich}px` }"
     @click="$emit('click')"

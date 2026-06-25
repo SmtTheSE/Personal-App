@@ -11,17 +11,19 @@ const { leadingActions, trailingActions, rowStyle, triggerAction } = useSwipeGes
 </script>
 
 <template>
-  <div class="relative overflow-hidden" style="touch-action: pan-y">
-    <!-- Leading actions -->
+  <div class="relative isolate overflow-hidden" style="touch-action: pan-y">
+    <!-- Action layers sit behind the sliding foreground -->
     <div
       v-if="leadingActions.length"
-      class="absolute inset-y-0 left-0 flex"
+      class="absolute inset-y-0 left-0 z-0 flex"
+      aria-hidden="true"
     >
       <button
         v-for="action in leadingActions"
         :key="action.id"
         type="button"
-        class="flex min-w-[72px] items-center justify-center px-4 text-caption-1 font-semibold text-white press-scale"
+        tabindex="-1"
+        class="flex w-[72px] items-center justify-center text-caption-1 font-semibold text-white"
         :style="{ background: action.background }"
         @click="triggerAction(action)"
       >
@@ -29,16 +31,17 @@ const { leadingActions, trailingActions, rowStyle, triggerAction } = useSwipeGes
       </button>
     </div>
 
-    <!-- Trailing actions -->
     <div
       v-if="trailingActions.length"
-      class="absolute inset-y-0 right-0 flex"
+      class="absolute inset-y-0 right-0 z-0 flex flex-row-reverse"
+      aria-hidden="true"
     >
       <button
         v-for="action in trailingActions"
         :key="action.id"
         type="button"
-        class="flex min-w-[72px] items-center justify-center px-4 text-caption-1 font-semibold text-white press-scale"
+        tabindex="-1"
+        class="flex w-[72px] items-center justify-center text-caption-1 font-semibold text-white"
         :style="{ background: action.background }"
         @click="triggerAction(action)"
       >
@@ -46,10 +49,10 @@ const { leadingActions, trailingActions, rowStyle, triggerAction } = useSwipeGes
       </button>
     </div>
 
-    <!-- Row content -->
+    <!-- Opaque foreground — must cover actions when offset is 0 -->
     <div
       ref="rowRef"
-      class="relative bg-inherit"
+      class="relative z-10 w-full bg-[var(--color-secondary-grouped-bg)] dark:bg-[var(--color-tertiary-grouped-bg-dark)]"
       :style="rowStyle"
     >
       <slot />

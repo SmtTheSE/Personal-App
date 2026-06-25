@@ -131,7 +131,9 @@ async function toggleTask(id: string) {
                 <div class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-tertiary" />
               </template>
               <template #trailing>
-                <IOSChip :label="task.priority" :color="priorityColors[task.priority]" />
+                <div @click.stop>
+                  <IOSChip :label="task.priority" :color="priorityColors[task.priority]" selected />
+                </div>
               </template>
             </IOSListItem>
           </IOSSwipeRow>
@@ -148,7 +150,9 @@ async function toggleTask(id: string) {
                 <div class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-tertiary" />
               </template>
               <template #trailing>
-                <IOSChip :label="task.priority" :color="priorityColors[task.priority]" />
+                <div @click.stop>
+                  <IOSChip :label="task.priority" :color="priorityColors[task.priority]" selected />
+                </div>
               </template>
             </IOSListItem>
           </IOSSwipeRow>
@@ -158,7 +162,7 @@ async function toggleTask(id: string) {
           <IOSSwipeRow v-for="task in completedTasks" :key="task.id" :actions="swipeActions(task)">
             <IOSListItem :title="task.title" @click="toggleTask(task.id)">
               <template #icon>
-                <div class="flex h-6 w-6 items-center justify-center rounded-full bg-system-green">
+                <div class="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-system-green)]">
                   <PhCheckCircle :size="14" weight="fill" class="text-white" />
                 </div>
               </template>

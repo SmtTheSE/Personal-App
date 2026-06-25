@@ -94,8 +94,11 @@ export function useSwipeGesture(
 
   const rowStyle = computed(() => ({
     transform: `translateX(${offsetX.value}px)`,
-    transition: isOpen.value ? 'transform 0.25s var(--ease-ios)' : undefined,
-    touchAction: 'pan-y',
+    transition:
+      offsetX.value === 0 || isOpen.value
+        ? 'transform 0.25s var(--ease-ios)'
+        : undefined,
+    touchAction: 'pan-y' as const,
   }))
 
   return {
