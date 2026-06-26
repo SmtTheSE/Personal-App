@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { storeToRefs } from 'pinia'
 import {
   PhHouse,
   PhCalendar,
@@ -17,7 +16,6 @@ import type { TabRouteName } from '@/design/constants'
 const route = useRoute()
 const router = useRouter()
 const uiStore = useUiStore()
-const { tabBarVisible } = storeToRefs(uiStore)
 const { trigger } = useHaptics()
 
 const tabs = [
@@ -35,7 +33,7 @@ const activeTab = computed(() => {
   return match?.name ?? 'dashboard'
 })
 
-const isHidden = computed(() => !tabBarVisible.value || uiStore.activeSheetCount > 0)
+const isHidden = computed(() => uiStore.activeSheetCount > 0)
 
 function navigate(path: string) {
   if (route.path !== path) {
@@ -47,15 +45,16 @@ function navigate(path: string) {
 
 <template>
   <nav
-    class="scroll-gpu pointer-events-none fixed inset-x-0 z-40 transition-transform duration-300 ease-[var(--ease-ios)] ios-safe-bottom"
+    class="fixed inset-x-0 z-50 ios-safe-bottom transition-transform duration-300 ease-[var(--ease-ios)]"
     :style="{
       bottom: `${LAYOUT.tabBarInset}px`,
       transform: isHidden ? 'translateY(calc(100% + 32px))' : 'translateY(0)',
+      pointerEvents: isHidden ? 'none' : 'auto',
     }"
     aria-label="Main navigation"
   >
     <div
-      class="pointer-events-auto mx-auto material-glass-pill flex max-w-lg items-stretch justify-around px-2 py-1.5"
+      class="mx-auto material-glass-pill flex max-w-lg items-stretch justify-around px-2 py-1.5"
       :style="{
         marginLeft: `${LAYOUT.tabBarInset}px`,
         marginRight: `${LAYOUT.tabBarInset}px`,
@@ -67,7 +66,7 @@ function navigate(path: string) {
         v-for="tab in tabs"
         :key="tab.name"
         type="button"
-        class="flex flex-1 flex-col items-center justify-center gap-0.5 py-1 press-scale"
+        class="flex min-h-[48px] flex-1 flex-col items-center justify-center gap-0.5 py-1 press-scale touch-manipulation"
         :class="activeTab === tab.name ? 'text-system-blue' : 'text-tertiary'"
         :aria-current="activeTab === tab.name ? 'page' : undefined"
         :aria-label="tab.label"

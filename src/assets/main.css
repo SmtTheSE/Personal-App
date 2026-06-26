@@ -90,6 +90,10 @@
     transform: translateZ(0);
     backface-visibility: hidden;
   }
+
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
 }
 
 ::-webkit-scrollbar {
