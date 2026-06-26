@@ -9,9 +9,11 @@ import { useResourcesStore } from '@/stores/resources'
 import { useNotesStore } from '@/stores/notes'
 import { useAnalyticsStore, useInterviewStore } from '@/stores/analytics'
 import { useMilestonesStore } from '@/stores/milestones'
+import { useSpreadsheetsStore } from '@/stores/spreadsheets'
 import { useUiStore } from '@/stores/ui'
 import PageShell from '@/components/layout/PageShell.vue'
 import NavBar from '@/components/layout/NavBar.vue'
+import FloatingActionButton from '@/components/ui/FloatingActionButton.vue'
 import IOSListGroup from '@/components/ui/IOSListGroup.vue'
 import IOSListItem from '@/components/ui/IOSListItem.vue'
 import WidgetMetric from '@/components/ui/WidgetMetric.vue'
@@ -28,6 +30,8 @@ import {
   PhNotePencil,
   PhChartLine,
   PhPlus,
+  PhTable,
+  PhLightning,
 } from '@phosphor-icons/vue'
 
 const auth = useAuthStore()
@@ -38,6 +42,7 @@ const notesStore = useNotesStore()
 const analyticsStore = useAnalyticsStore()
 const interviewStore = useInterviewStore()
 const milestonesStore = useMilestonesStore()
+const spreadsheetsStore = useSpreadsheetsStore()
 const ui = useUiStore()
 const router = useRouter()
 
@@ -60,12 +65,13 @@ async function handleRefresh() {
     notesStore.fetchNotes(),
     analyticsStore.fetchSessions(),
     interviewStore.fetchProblems(),
+    spreadsheetsStore.fetchSpreadsheets(),
   ])
 }
 </script>
 
 <template>
-  <PageShell refreshable :on-refresh="handleRefresh">
+  <PageShell refreshable fab :on-refresh="handleRefresh">
     <template #header>
       <NavBar :title="`${greeting}, ${displayName}`" large show-settings show-search />
     </template>
@@ -102,6 +108,27 @@ async function handleRefresh() {
           <p class="text-footnote text-tertiary">
             {{ analyticsStore.todayMinutes }} min studied today · Pomodoro timer
           </p>
+        </div>
+        <PhArrowRight :size="18" class="shrink-0 text-tertiary" />
+      </button>
+
+      <button
+        type="button"
+        class="surface-elevated flex w-full items-center gap-4 p-4 text-left press-scale"
+        :style="{ borderRadius: 'var(--radius-card)' }"
+        @click="router.push('/sheets')"
+      >
+        <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-system-green/15 text-system-green">
+          <PhTable :size="28" weight="fill" />
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="text-headline text-primary">Sheet Automations</p>
+          <p class="text-footnote text-tertiary">
+            {{ spreadsheetsStore.sorted.length }} workbook(s) · GPA, assignments, interview grids
+          </p>
+        </div>
+        <div v-if="spreadsheetsStore.sorted.length" class="flex items-center gap-1 text-system-orange">
+          <PhLightning :size="16" weight="fill" />
         </div>
         <PhArrowRight :size="18" class="shrink-0 text-tertiary" />
       </button>
@@ -268,14 +295,6 @@ async function handleRefresh() {
       </section>
     </div>
 
-    <button
-      type="button"
-      class="fixed right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-system-blue text-white shadow-lg press-scale ios-safe-bottom"
-      :style="{ bottom: 'calc(var(--tab-bar-offset, 88px) + 8px)' }"
-      aria-label="Quick capture"
-      @click="ui.openQuickCapture()"
-    >
-      <PhPlus :size="26" weight="bold" />
-    </button>
+    <FloatingActionButton @click="ui.openQuickCapture()" />
   </PageShell>
 </template>

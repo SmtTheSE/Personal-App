@@ -18,6 +18,8 @@ export const LAYOUT = {
   screenInsetLg: 20,
   tabBarHeight: 72,
   tabBarInset: 16,
+  fabSize: 56,
+  fabMargin: 12,
   navCompactHeight: 44,
   navLargeTitleHeight: 96,
   collapseThreshold: 60,

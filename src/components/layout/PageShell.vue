@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, provide, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, provide, onMounted, onUnmounted, watch } from 'vue'
 import { useScrollChrome } from '@/composables/useScrollChrome'
 import { usePullToRefresh } from '@/composables/usePullToRefresh'
 import { useUiStore } from '@/stores/ui'
@@ -9,9 +9,16 @@ const props = withDefaults(
   defineProps<{
     refreshable?: boolean
     onRefresh?: () => Promise<void>
+    fab?: boolean
   }>(),
-  { refreshable: false }
+  { refreshable: false, fab: false }
 )
+
+const scrollPaddingBottom = computed(() => {
+  const base = LAYOUT.tabBarHeight + LAYOUT.tabBarInset
+  const fab = props.fab ? LAYOUT.fabSize + LAYOUT.fabMargin : 0
+  return `calc(${base + fab}px + env(safe-area-inset-bottom, 0px))`
+})
 
 const scrollRef = ref<HTMLElement | null>(null)
 const uiStore = useUiStore()
@@ -43,7 +50,7 @@ onUnmounted(() => {
     <div
       ref="scrollRef"
       class="flex-1 overflow-y-auto overscroll-contain"
-      :style="{ paddingBottom: `calc(${LAYOUT.tabBarHeight}px + env(safe-area-inset-bottom, 0px))` }"
+      :style="{ paddingBottom: scrollPaddingBottom }"
     >
       <!-- Pull-to-refresh indicator -->
       <div

@@ -86,6 +86,18 @@ const router = createRouter({
           component: () => import('@/views/SettingsView.vue'),
           meta: { transition: 'slide-push' },
         },
+        {
+          path: 'sheets',
+          name: 'sheets',
+          component: () => import('@/views/SheetsHubView.vue'),
+          meta: { transition: 'slide-push' },
+        },
+        {
+          path: 'sheets/:id',
+          name: 'sheet-editor',
+          component: () => import('@/views/SpreadsheetEditorView.vue'),
+          meta: { transition: 'slide-push' },
+        },
       ],
     },
     {

@@ -10,7 +10,7 @@ import IOSListGroup from '@/components/ui/IOSListGroup.vue'
 import IOSListItem from '@/components/ui/IOSListItem.vue'
 import IOSButton from '@/components/ui/IOSButton.vue'
 import IOSSwitch from '@/components/ui/IOSSwitch.vue'
-import { PhMoon, PhSun, PhSignOut, PhTarget } from '@phosphor-icons/vue'
+import { PhMoon, PhSun, PhSignOut, PhTarget, PhTable } from '@phosphor-icons/vue'
 import { initialsFromString, gradientFromString } from '@/lib/color'
 
 const auth = useAuthStore()
@@ -97,6 +97,14 @@ async function handleSignOut() {
           Save Profile
         </IOSButton>
       </div>
+
+      <IOSListGroup title="Data">
+        <IOSListItem title="Sheet Automations" subtitle="Spreadsheets with formulas & auto-rules" @click="router.push('/sheets')">
+          <template #icon>
+            <PhTable :size="22" class="text-[var(--color-system-green)]" />
+          </template>
+        </IOSListItem>
+      </IOSListGroup>
 
       <IOSListGroup title="Appearance">
         <IOSListItem title="Dark Mode" @click.prevent>

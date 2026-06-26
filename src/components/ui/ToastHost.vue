@@ -1,24 +1,35 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useUiStore } from '@/stores/ui'
+import { LAYOUT } from '@/design/constants'
 
 const ui = useUiStore()
 const { toasts } = storeToRefs(ui)
+
+const bottomOffset = computed(
+  () =>
+    `calc(env(safe-area-inset-bottom, 0px) + ${LAYOUT.tabBarInset}px + ${LAYOUT.tabBarHeight}px + ${LAYOUT.fabMargin}px)`
+)
 </script>
 
 <template>
   <Teleport to="body">
-    <div class="pointer-events-none fixed inset-x-0 top-0 z-[100] flex flex-col gap-2 p-4 ios-safe-top">
-      <TransitionGroup name="fade">
+    <div
+      v-if="toasts.length"
+      class="pointer-events-none fixed inset-x-0 z-[90] flex flex-col-reverse items-center gap-2 px-4"
+      :style="{ bottom: bottomOffset }"
+    >
+      <TransitionGroup name="toast" tag="div" class="relative flex w-full max-w-md flex-col-reverse gap-2">
         <div
           v-for="toast in toasts"
           :key="toast.id"
           role="alert"
-          class="pointer-events-auto mx-auto w-full max-w-md rounded-[12px] px-4 py-3 text-subheadline font-medium shadow-lg press-scale"
+          class="pointer-events-auto w-full rounded-2xl px-4 py-3.5 text-subheadline font-medium shadow-xl backdrop-blur-md"
           :class="{
             'bg-[var(--color-system-green)] text-white': toast.type === 'success',
             'bg-[var(--color-system-red)] text-white': toast.type === 'error',
-            'bg-[var(--color-secondary-grouped-bg)] text-primary dark:bg-[var(--color-secondary-grouped-bg-dark)]': toast.type === 'info',
+            'surface-elevated text-primary': toast.type === 'info',
           }"
           @click="ui.dismissToast(toast.id)"
         >

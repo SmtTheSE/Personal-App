@@ -35,11 +35,13 @@ function handleDragEnd() {
 
 watch(
   () => props.open,
-  (isOpen) => {
-    if (isOpen) uiStore.openSheet()
-    else uiStore.closeSheet()
-  },
-  { immediate: true }
+  (isOpen, wasOpen) => {
+    if (isOpen) {
+      uiStore.openSheet()
+    } else if (wasOpen) {
+      uiStore.closeSheet()
+    }
+  }
 )
 
 onUnmounted(() => {
