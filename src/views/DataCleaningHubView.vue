@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { format } from 'date-fns'
 import { useDataCleaningStore } from '@/stores/dataCleaning'
 import { useAsyncAction } from '@/composables/useAsyncAction'
+import { MAX_FILE_BYTES } from '@/lib/dataCleaning/parseImport'
 import PageShell from '@/components/layout/PageShell.vue'
 import NavBar from '@/components/layout/NavBar.vue'
 import IOSListGroup from '@/components/ui/IOSListGroup.vue'
@@ -26,6 +27,7 @@ const { run } = useAsyncAction()
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const importing = ref(false)
+const maxFileMb = MAX_FILE_BYTES / (1024 * 1024)
 
 onMounted(() => store.loadFromStorage())
 
@@ -90,7 +92,7 @@ async function handleDelete(id: string) {
           <div>
             <h2 class="text-headline text-primary">Analyst-style cleaning</h2>
             <p class="text-footnote mt-1 text-tertiary">
-              Upload CSV or Excel (max 10 MB, 25k rows). Profile columns instantly, remove duplicates, and export cleaned data — all in your browser.
+              Upload CSV or Excel (up to {{ maxFileMb }} MB). No row cap — profiling, dedup, and export run entirely in your browser.
             </p>
           </div>
         </div>

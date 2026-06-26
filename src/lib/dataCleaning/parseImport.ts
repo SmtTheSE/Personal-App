@@ -1,8 +1,10 @@
 import * as XLSX from 'xlsx'
 import type { CleaningColumn, CleaningRow } from '@/types/dataCleaning'
 
-export const MAX_FILE_BYTES = 10 * 1024 * 1024
-export const MAX_ROWS = 25_000
+/** Client-side parse limits (Vercel never sees file bytes). */
+export const MAX_FILE_BYTES = 200 * 1024 * 1024
+/** Show a performance notice above this row count — not a hard cap. */
+export const LARGE_DATASET_ROW_WARNING = 200_000
 
 export interface ParsedDataset {
   title: string
@@ -43,7 +45,9 @@ function columnId(index: number) {
 
 export async function parseCleaningFile(file: File): Promise<ParsedDataset> {
   if (file.size > MAX_FILE_BYTES) {
-    throw new Error('File too large (max 10 MB). Split the file or use a smaller export.')
+    throw new Error(
+      `File too large (${(file.size / (1024 * 1024)).toFixed(1)} MB). Max ${MAX_FILE_BYTES / (1024 * 1024)} MB per file in the browser.`
+    )
   }
 
   const sourceType = sourceTypeFromName(file.name)
@@ -72,9 +76,6 @@ export async function parseCleaningFile(file: File): Promise<ParsedDataset> {
   }))
 
   const dataRows = matrix.slice(1)
-  if (dataRows.length > MAX_ROWS) {
-    throw new Error(`Too many rows (${dataRows.length.toLocaleString()}). Max ${MAX_ROWS.toLocaleString()} per file.`)
-  }
 
   const rows: CleaningRow[] = dataRows.map((raw, rowIndex) => {
     const values: Record<string, string | number | boolean | null> = {}

@@ -12,7 +12,7 @@ const props = defineProps<{
 }>()
 
 const displayRows = computed(() => {
-  const limit = props.maxRows ?? 200
+  const limit = props.maxRows ?? 1000
   return props.rows.slice(0, limit)
 })
 

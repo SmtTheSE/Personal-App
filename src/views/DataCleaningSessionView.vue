@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useDataCleaningStore } from '@/stores/dataCleaning'
 import { useAsyncAction } from '@/composables/useAsyncAction'
+import { LARGE_DATASET_ROW_WARNING } from '@/lib/dataCleaning/parseImport'
 import { downloadCleanedSession } from '@/lib/dataCleaning/exportCleaned'
 import { columnsWithIssues } from '@/lib/dataCleaning/profileColumns'
 import PageShell from '@/components/layout/PageShell.vue'
@@ -56,6 +57,10 @@ const duplicateRowCount = computed(() => {
   if (!session.value) return 0
   return session.value.duplicateGroups.reduce((n, g) => n + g.rowIds.length - 1, 0)
 })
+
+const showLargeDatasetNotice = computed(
+  () => (session.value?.rows.length ?? 0) >= LARGE_DATASET_ROW_WARNING
+)
 
 watch(sessionId, () => {
   selectedColumnId.value = null
@@ -132,6 +137,13 @@ function exportFile(format: 'xlsx' | 'csv') {
     </template>
 
     <div class="space-y-6 px-4 py-4">
+      <p
+        v-if="showLargeDatasetNotice"
+        class="rounded-xl bg-system-orange/10 px-4 py-3 text-footnote text-system-orange"
+      >
+        Large dataset ({{ session.rows.length.toLocaleString() }} rows). Cleaning runs in your browser — operations may take longer on this device.
+      </p>
+
       <div class="grid grid-cols-2 gap-3">
         <WidgetMetric
           :icon="PhTable"
