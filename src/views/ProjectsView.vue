@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProjectsStore } from '@/stores/projects'
 import { useIntegrationsStore } from '@/stores/integrations'
@@ -15,9 +15,8 @@ import IOSTextArea from '@/components/ui/IOSTextArea.vue'
 import IOSEmptyState from '@/components/ui/IOSEmptyState.vue'
 import IOSChip from '@/components/ui/IOSChip.vue'
 import IOSListGroup from '@/components/ui/IOSListGroup.vue'
-import IOSListItem from '@/components/ui/IOSListItem.vue'
 import IOSSkeleton from '@/components/ui/IOSSkeleton.vue'
-import { PhPlus, PhGithubLogo, PhGlobe, PhFolder, PhSquaresFour, PhList, PhDownloadSimple } from '@phosphor-icons/vue'
+import { PhPlus, PhGithubLogo, PhGlobe, PhFolder, PhSquaresFour, PhList, PhDownloadSimple, PhArrowSquareOut, PhCaretLeft, PhCaretRight } from '@phosphor-icons/vue'
 import type { ProjectStatus } from '@/types'
 import type { GitHubRepo } from '@/types/integrations'
 
@@ -29,6 +28,7 @@ const { run } = useAsyncAction()
 
 const showSheet = ref(false)
 const showImportSheet = ref(false)
+const repoSearch = ref('')
 const viewMode = ref<'list' | 'grid'>('list')
 const title = ref('')
 const description = ref('')
@@ -67,9 +67,35 @@ async function createProject() {
 
 async function openImportSheet() {
   showImportSheet.value = true
+  repoSearch.value = ''
   await integrations.fetchStatuses()
   if (!integrations.githubConnected) return
-  await run(() => integrations.fetchGitHubRepos())
+  await run(() => integrations.fetchGitHubRepos(1))
+}
+
+const filteredRepos = computed(() => {
+  const q = repoSearch.value.trim().toLowerCase()
+  if (!q) return integrations.githubRepos
+  return integrations.githubRepos.filter(
+    (repo) =>
+      repo.full_name.toLowerCase().includes(q) ||
+      (repo.description?.toLowerCase().includes(q) ?? false) ||
+      (repo.language?.toLowerCase().includes(q) ?? false)
+  )
+})
+
+const repoPageRange = computed(() => {
+  const start = (integrations.githubReposPage - 1) * integrations.githubReposPerPage + 1
+  const end = start + integrations.githubRepos.length - 1
+  return { start: integrations.githubRepos.length ? start : 0, end }
+})
+
+async function goPrevRepoPage() {
+  await run(() => integrations.prevGitHubReposPage())
+}
+
+async function goNextRepoPage() {
+  await run(() => integrations.nextGitHubReposPage())
 }
 
 function selectRepo(repo: GitHubRepo) {
@@ -218,20 +244,82 @@ function selectRepo(repo: GitHubRepo) {
         <IOSButton block @click="auth.signInWithGitHub()">Connect GitHub</IOSButton>
         <IOSButton block variant="bordered" @click="router.push('/settings')">Open Settings</IOSButton>
       </div>
-      <IOSSkeleton v-else-if="integrations.loading" />
-      <IOSListGroup v-else :inset="false">
-        <IOSListItem
-          v-for="repo in integrations.githubRepos"
-          :key="repo.id"
-          :title="repo.full_name"
-          :subtitle="repo.description ?? repo.language ?? 'Repository'"
-          @click="selectRepo(repo)"
-        >
-          <template #icon>
-            <PhGithubLogo :size="22" class="text-primary" />
-          </template>
-        </IOSListItem>
-      </IOSListGroup>
+      <div v-else class="space-y-3">
+        <IOSTextField
+          v-model="repoSearch"
+          label="Search"
+          placeholder="Filter repos on this page"
+          clearable
+        />
+        <p class="text-caption-1 text-tertiary">
+          Page {{ integrations.githubReposPage }}
+          <span v-if="repoPageRange.start">
+            · repos {{ repoPageRange.start }}–{{ repoPageRange.end }}
+          </span>
+        </p>
+        <IOSSkeleton v-if="integrations.loading" />
+        <div v-else-if="!filteredRepos.length" class="py-8 text-center text-footnote text-tertiary">
+          No repositories on this page match your search.
+        </div>
+        <IOSListGroup v-else :inset="false">
+          <div
+            v-for="repo in filteredRepos"
+            :key="repo.id"
+            class="flex items-center gap-3 border-b border-[var(--color-separator)] px-4 py-3 last:border-b-0"
+          >
+            <PhGithubLogo :size="22" class="shrink-0 text-primary" weight="fill" />
+            <div class="min-w-0 flex-1">
+              <a
+                :href="repo.html_url"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-headline text-system-blue hover:underline"
+              >
+                {{ repo.full_name }}
+              </a>
+              <p class="text-footnote mt-0.5 line-clamp-2 text-tertiary">
+                {{ repo.description ?? repo.language ?? 'Repository' }}
+                <span v-if="repo.private" class="text-caption-2"> · private</span>
+              </p>
+            </div>
+            <div class="flex shrink-0 items-center gap-1">
+              <a
+                :href="repo.html_url"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex h-9 w-9 items-center justify-center rounded-full fill-tertiary text-system-blue press-scale"
+                aria-label="Open on GitHub"
+              >
+                <PhArrowSquareOut :size="18" />
+              </a>
+              <IOSButton size="sm" variant="bordered" @click="selectRepo(repo)">
+                Import
+              </IOSButton>
+            </div>
+          </div>
+        </IOSListGroup>
+        <div class="flex items-center justify-between gap-2 pt-1">
+          <IOSButton
+            size="sm"
+            variant="bordered"
+            :disabled="integrations.githubReposPage <= 1 || integrations.loading"
+            @click="goPrevRepoPage"
+          >
+            <PhCaretLeft :size="16" class="mr-1 inline" />
+            Previous
+          </IOSButton>
+          <span class="text-caption-1 text-tertiary">Page {{ integrations.githubReposPage }}</span>
+          <IOSButton
+            size="sm"
+            variant="bordered"
+            :disabled="!integrations.githubReposHasMore || integrations.loading"
+            @click="goNextRepoPage"
+          >
+            Next
+            <PhCaretRight :size="16" class="ml-1 inline" />
+          </IOSButton>
+        </div>
+      </div>
     </IOSSheet>
   </PageShell>
 </template>

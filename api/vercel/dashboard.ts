@@ -1,6 +1,7 @@
 export const config = { runtime: 'edge' }
 
 import { requireUser } from '../_lib/auth'
+import { fetchAllGitHubRepos, mapGitHubRepo, type GitHubRepoRaw } from '../_lib/github'
 import { getIntegrationToken, hasIntegration } from '../_lib/integrations'
 import { errorResponse, json } from '../_lib/http'
 
@@ -20,19 +21,6 @@ interface VercelDeploymentRaw {
   target: string | null
   projectId?: string
   meta?: Record<string, string>
-}
-
-interface GitHubRepoRaw {
-  id: number
-  name: string
-  full_name: string
-  html_url: string
-  description: string | null
-  private: boolean
-  updated_at: string
-  language: string | null
-  stargazers_count: number
-  default_branch: string
 }
 
 function vercelHeaders(token: string) {
@@ -146,21 +134,6 @@ function buildLinkedEntry(
   }
 }
 
-async function fetchGitHubRepos(token: string): Promise<GitHubRepoRaw[]> {
-  const res = await fetch(
-    'https://api.github.com/user/repos?per_page=100&sort=updated&affiliation=owner,collaborator,organization_member',
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/vnd.github+json',
-        'User-Agent': 'Nexus-Student-OS',
-      },
-    }
-  )
-  if (!res.ok) return []
-  return res.json()
-}
-
 export default async function handler(request: Request): Promise<Response> {
   if (request.method !== 'GET') {
     return errorResponse('Method not allowed', 405)
@@ -197,7 +170,7 @@ export default async function handler(request: Request): Promise<Response> {
       })
     }
 
-    const repos = githubToken ? await fetchGitHubRepos(githubToken) : []
+    const repos = githubToken ? await fetchAllGitHubRepos(githubToken) : []
 
     let projects: VercelProjectRaw[] = []
     let deployments: VercelDeploymentRaw[] = []
@@ -255,18 +228,7 @@ export default async function handler(request: Request): Promise<Response> {
     return json({
       githubConnected,
       vercelConnected,
-      repos: repos.map((r) => ({
-        id: r.id,
-        name: r.name,
-        full_name: r.full_name,
-        html_url: r.html_url,
-        description: r.description,
-        private: r.private,
-        updated_at: r.updated_at,
-        language: r.language,
-        stargazers_count: r.stargazers_count,
-        default_branch: r.default_branch,
-      })),
+      repos: repos.map(mapGitHubRepo),
       projects: mappedProjects,
       deployments: deployments.map(mapDeployment),
       linked,

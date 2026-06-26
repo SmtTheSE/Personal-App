@@ -2,20 +2,8 @@ export const config = { runtime: 'edge' }
 
 import { requireUser } from '../_lib/auth'
 import { getIntegrationToken } from '../_lib/integrations'
+import { fetchGitHubReposPage, GitHubApiError, mapGitHubRepo } from '../_lib/github'
 import { errorResponse, json } from '../_lib/http'
-
-interface GitHubRepoRaw {
-  id: number
-  name: string
-  full_name: string
-  html_url: string
-  description: string | null
-  private: boolean
-  updated_at: string
-  language: string | null
-  stargazers_count: number
-  default_branch: string
-}
 
 export default async function handler(request: Request): Promise<Response> {
   if (request.method !== 'GET') {
@@ -31,50 +19,28 @@ export default async function handler(request: Request): Promise<Response> {
       return errorResponse('GitHub not connected. Sign in with GitHub or reconnect in Settings.', 400)
     }
 
-    const repos: GitHubRepoRaw[] = []
-    let page = 1
+    const url = new URL(request.url)
+    const page = Math.max(1, Number.parseInt(url.searchParams.get('page') ?? '1', 10) || 1)
+    const perPage = Math.min(
+      100,
+      Math.max(1, Number.parseInt(url.searchParams.get('per_page') ?? '30', 10) || 30)
+    )
 
-    while (page <= 3) {
-      const res = await fetch(
-        `https://api.github.com/user/repos?per_page=100&page=${page}&sort=updated&affiliation=owner,collaborator,organization_member`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/vnd.github+json',
-            'User-Agent': 'Nexus-Student-OS',
-          },
-        }
-      )
+    const { repos, hasMore } = await fetchGitHubReposPage(token, page, perPage)
 
-      if (!res.ok) {
-        const detail = await res.text()
-        if (res.status === 401) {
-          return errorResponse('GitHub token expired. Reconnect GitHub in Settings.', 401)
-        }
-        return errorResponse(`GitHub API error: ${detail}`, res.status)
-      }
-
-      const batch = (await res.json()) as GitHubRepoRaw[]
-      repos.push(...batch)
-      if (batch.length < 100) break
-      page++
-    }
-
-    const mapped = repos.map((r) => ({
-      id: r.id,
-      name: r.name,
-      full_name: r.full_name,
-      html_url: r.html_url,
-      description: r.description,
-      private: r.private,
-      updated_at: r.updated_at,
-      language: r.language,
-      stargazers_count: r.stargazers_count,
-      default_branch: r.default_branch,
-    }))
-
-    return json({ repos: mapped })
+    return json({
+      repos: repos.map(mapGitHubRepo),
+      page,
+      per_page: perPage,
+      has_more: hasMore,
+    })
   } catch (err) {
+    if (err instanceof GitHubApiError) {
+      if (err.status === 401) {
+        return errorResponse('GitHub token expired. Reconnect GitHub in Settings.', 401)
+      }
+      return errorResponse(`GitHub API error: ${err.message}`, err.status)
+    }
     return errorResponse(err instanceof Error ? err.message : 'GitHub fetch failed', 500)
   }
 }

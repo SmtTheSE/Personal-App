@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Tooltip } from 'chart.js'
 import { Bar } from 'vue-chartjs'
 import { format, subDays } from 'date-fns'
@@ -22,8 +22,10 @@ import {
   PhSpinner,
   PhArrowSquareOut,
   PhGear,
+  PhCaretLeft,
+  PhCaretRight,
 } from '@phosphor-icons/vue'
-import type { VercelDeploymentState } from '@/types/integrations'
+import type { LinkedRepo, VercelDeploymentState } from '@/types/integrations'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip)
 
@@ -32,6 +34,21 @@ const integrations = useIntegrationsStore()
 const { run } = useAsyncAction()
 
 const dashboard = computed(() => integrations.dashboard)
+const githubOnlyPage = ref(1)
+const GITHUB_ONLY_PER_PAGE = 25
+
+const githubOnlyRepos = computed(() => dashboard.value?.linked.filter((l) => !l.onVercel) ?? [])
+const githubOnlyPageItems = computed(() => {
+  const start = (githubOnlyPage.value - 1) * GITHUB_ONLY_PER_PAGE
+  return githubOnlyRepos.value.slice(start, start + GITHUB_ONLY_PER_PAGE)
+})
+const githubOnlyHasMore = computed(
+  () => githubOnlyPage.value * GITHUB_ONLY_PER_PAGE < githubOnlyRepos.value.length
+)
+
+function repoUrl(item: LinkedRepo) {
+  return item.github?.html_url ?? `https://github.com/${item.repoFullName}`
+}
 
 const chartData = computed(() => {
   const byDay = dashboard.value?.stats.deploysByDay ?? {}
@@ -181,14 +198,33 @@ onMounted(async () => {
               <IOSListItem
                 v-for="item in dashboard.linked.filter((l) => l.onVercel)"
                 :key="item.repoFullName"
-                :title="item.repoFullName"
                 :subtitle="item.vercelProject?.framework ?? item.github?.language ?? 'Project'"
+                :show-chevron="false"
               >
+                <a
+                  :href="repoUrl(item)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-system-blue hover:underline"
+                  @click.stop
+                >
+                  {{ item.repoFullName }}
+                </a>
                 <template #icon>
                   <PhGithubLogo :size="22" class="text-primary" weight="fill" />
                 </template>
                 <template #trailing>
                   <div class="flex items-center gap-2">
+                    <a
+                      :href="repoUrl(item)"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="text-system-blue"
+                      aria-label="Open on GitHub"
+                      @click.stop
+                    >
+                      <PhGithubLogo :size="16" />
+                    </a>
                     <span class="text-caption-1 font-medium" :class="stateColor(item.latestDeployment?.state)">
                       {{ stateLabel(item.latestDeployment?.state) }}
                     </span>
@@ -209,20 +245,65 @@ onMounted(async () => {
             <p v-else class="text-footnote text-tertiary">No GitHub-linked Vercel projects found.</p>
           </section>
 
-          <section v-if="dashboard.linked.filter((l) => !l.onVercel).length">
-            <h3 class="text-headline mb-2 text-primary">GitHub only (not on Vercel)</h3>
+          <section v-if="githubOnlyRepos.length">
+            <h3 class="text-headline mb-2 text-primary">
+              GitHub only (not on Vercel)
+              <span class="text-footnote font-normal text-tertiary"> · {{ githubOnlyRepos.length }} repos</span>
+            </h3>
             <IOSListGroup :inset="false">
               <IOSListItem
-                v-for="item in dashboard.linked.filter((l) => !l.onVercel).slice(0, 10)"
+                v-for="item in githubOnlyPageItems"
                 :key="item.repoFullName"
-                :title="item.repoFullName"
                 :subtitle="item.github?.description ?? 'Not deployed on Vercel'"
+                :show-chevron="false"
               >
+                <a
+                  :href="repoUrl(item)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-system-blue hover:underline"
+                  @click.stop
+                >
+                  {{ item.repoFullName }}
+                </a>
                 <template #icon>
                   <PhGithubLogo :size="22" class="text-tertiary" />
                 </template>
+                <template #trailing>
+                  <a
+                    :href="repoUrl(item)"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-system-blue"
+                    aria-label="Open on GitHub"
+                    @click.stop
+                  >
+                    <PhArrowSquareOut :size="16" />
+                  </a>
+                </template>
               </IOSListItem>
             </IOSListGroup>
+            <div v-if="githubOnlyRepos.length > GITHUB_ONLY_PER_PAGE" class="mt-2 flex items-center justify-between">
+              <IOSButton
+                size="sm"
+                variant="bordered"
+                :disabled="githubOnlyPage <= 1"
+                @click="githubOnlyPage--"
+              >
+                <PhCaretLeft :size="16" class="mr-1 inline" />
+                Previous
+              </IOSButton>
+              <span class="text-caption-1 text-tertiary">Page {{ githubOnlyPage }}</span>
+              <IOSButton
+                size="sm"
+                variant="bordered"
+                :disabled="!githubOnlyHasMore"
+                @click="githubOnlyPage++"
+              >
+                Next
+                <PhCaretRight :size="16" class="ml-1 inline" />
+              </IOSButton>
+            </div>
           </section>
         </template>
       </template>

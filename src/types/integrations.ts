@@ -48,6 +48,13 @@ export interface LinkedRepo {
   onVercel: boolean
 }
 
+export interface GitHubReposPage {
+  repos: GitHubRepo[]
+  page: number
+  per_page: number
+  has_more: boolean
+}
+
 export interface DeploymentStats {
   totalDeploys: number
   successCount: number

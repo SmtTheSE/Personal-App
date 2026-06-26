@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import type {
   DeploymentDashboard,
   GitHubRepo,
+  GitHubReposPage,
   IntegrationProvider,
   IntegrationStatus,
 } from '@/types/integrations'
@@ -28,6 +29,9 @@ export const useIntegrationsStore = defineStore('integrations', () => {
   const statuses = ref<IntegrationStatus[]>([])
   const dashboard = ref<DeploymentDashboard | null>(null)
   const githubRepos = ref<GitHubRepo[]>([])
+  const githubReposPage = ref(1)
+  const githubReposPerPage = ref(30)
+  const githubReposHasMore = ref(false)
   const loading = ref(false)
   const dashboardLoading = ref(false)
 
@@ -120,15 +124,30 @@ export const useIntegrationsStore = defineStore('integrations', () => {
     if (provider === 'vercel') dashboard.value = null
   }
 
-  async function fetchGitHubRepos() {
+  async function fetchGitHubRepos(page = 1) {
     loading.value = true
     try {
-      const data = await apiGet<{ repos: GitHubRepo[] }>('/api/github/repos')
+      const data = await apiGet<GitHubReposPage>(
+        `/api/github/repos?page=${page}&per_page=${githubReposPerPage.value}`
+      )
       githubRepos.value = data.repos
+      githubReposPage.value = data.page
+      githubReposPerPage.value = data.per_page
+      githubReposHasMore.value = data.has_more
       return data.repos
     } finally {
       loading.value = false
     }
+  }
+
+  async function nextGitHubReposPage() {
+    if (!githubReposHasMore.value) return githubRepos.value
+    return fetchGitHubRepos(githubReposPage.value + 1)
+  }
+
+  async function prevGitHubReposPage() {
+    if (githubReposPage.value <= 1) return githubRepos.value
+    return fetchGitHubRepos(githubReposPage.value - 1)
   }
 
   async function fetchDashboard() {
@@ -148,6 +167,9 @@ export const useIntegrationsStore = defineStore('integrations', () => {
     statuses,
     dashboard,
     githubRepos,
+    githubReposPage,
+    githubReposPerPage,
+    githubReposHasMore,
     loading,
     dashboardLoading,
     githubConnected,
@@ -157,6 +179,8 @@ export const useIntegrationsStore = defineStore('integrations', () => {
     saveVercelToken,
     disconnect,
     fetchGitHubRepos,
+    nextGitHubReposPage,
+    prevGitHubReposPage,
     fetchDashboard,
   }
 })
