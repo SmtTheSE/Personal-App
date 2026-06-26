@@ -9,13 +9,14 @@ import PageShell from '@/components/layout/PageShell.vue'
 import NavBar from '@/components/layout/NavBar.vue'
 import SpreadsheetGrid from '@/components/spreadsheet/SpreadsheetGrid.vue'
 import AutomationPanel from '@/components/spreadsheet/AutomationPanel.vue'
+import ExportShareSheet from '@/components/spreadsheet/ExportShareSheet.vue'
 import IOSSheet from '@/components/ui/IOSSheet.vue'
 import IOSTextField from '@/components/ui/IOSTextField.vue'
 import IOSSwitch from '@/components/ui/IOSSwitch.vue'
 import IOSButton from '@/components/ui/IOSButton.vue'
 import IOSChip from '@/components/ui/IOSChip.vue'
 import type { SheetColumn } from '@/types/spreadsheet'
-import { PhLightning, PhTrash } from '@phosphor-icons/vue'
+import { PhLightning, PhTrash, PhShareNetwork } from '@phosphor-icons/vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -27,6 +28,7 @@ const { trigger } = useHaptics()
 const sheetId = ref<string | null>(null)
 const showCellEditor = ref(false)
 const showAutomations = ref(false)
+const showExportShare = ref(false)
 const editingRowId = ref<string | null>(null)
 const editingColId = ref<string | null>(null)
 const editValue = ref('')
@@ -149,14 +151,24 @@ async function deleteWorkbook() {
               @click="sheetId = sh.id"
             />
           </div>
-          <button
-            type="button"
-            class="flex h-9 shrink-0 items-center gap-1 rounded-full bg-system-orange/15 px-3 text-caption-1 font-medium text-system-orange press-scale"
-            @click="showAutomations = true"
-          >
-            <PhLightning :size="14" weight="fill" />
-            {{ activeSheet.automations.filter((a) => a.enabled).length }}
-          </button>
+          <div class="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              class="flex h-9 w-9 items-center justify-center rounded-full bg-system-blue/15 text-system-blue press-scale"
+              aria-label="Export and share"
+              @click="showExportShare = true"
+            >
+              <PhShareNetwork :size="16" weight="fill" />
+            </button>
+            <button
+              type="button"
+              class="flex h-9 items-center gap-1 rounded-full bg-system-orange/15 px-3 text-caption-1 font-medium text-system-orange press-scale"
+              @click="showAutomations = true"
+            >
+              <PhLightning :size="14" weight="fill" />
+              {{ activeSheet.automations.filter((a) => a.enabled).length }}
+            </button>
+          </div>
         </div>
       </NavBar>
     </template>
@@ -249,6 +261,13 @@ async function deleteWorkbook() {
         <IOSButton block @click="saveCell">Save & Run Automations</IOSButton>
       </div>
     </IOSSheet>
+
+    <ExportShareSheet
+      :open="showExportShare"
+      :workbook="workbook"
+      :active-sheet-id="activeSheet.id"
+      @close="showExportShare = false"
+    />
 
     <IOSSheet :open="showAutomations" title="Automations" @close="showAutomations = false">
       <div class="px-4 pb-8">

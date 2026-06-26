@@ -13,16 +13,25 @@ import IOSTextField from '@/components/ui/IOSTextField.vue'
 import IOSButton from '@/components/ui/IOSButton.vue'
 import IOSEmptyState from '@/components/ui/IOSEmptyState.vue'
 import IOSSkeleton from '@/components/ui/IOSSkeleton.vue'
-import { PhTable, PhPlus, PhLightning } from '@phosphor-icons/vue'
-import type { SpreadsheetTemplate } from '@/types/spreadsheet'
+import IOSContextMenu from '@/components/ui/IOSContextMenu.vue'
+import ExportShareSheet from '@/components/spreadsheet/ExportShareSheet.vue'
+import { PhTable, PhPlus, PhLightning, PhShareNetwork } from '@phosphor-icons/vue'
+import type { Spreadsheet, SpreadsheetTemplate } from '@/types/spreadsheet'
 
 const router = useRouter()
 const store = useSpreadsheetsStore()
 const { run } = useAsyncAction()
 
 const showNewSheet = ref(false)
+const showExportShare = ref(false)
+const exportWorkbook = ref<Spreadsheet | null>(null)
 const newTitle = ref('')
 const selectedTemplate = ref<SpreadsheetTemplate>('assignments')
+
+function openExportShare(wb: Spreadsheet) {
+  exportWorkbook.value = wb
+  showExportShare.value = true
+}
 
 async function handleRefresh() {
   await store.fetchSpreadsheets()
@@ -87,29 +96,51 @@ function automationCount(id: string) {
         <h2 class="text-title-3 mb-2 text-primary">Your Workbooks</h2>
         <IOSSkeleton v-if="store.loading" />
         <IOSListGroup v-else-if="store.sorted.length" :inset="false">
-          <IOSListItem
+          <IOSContextMenu
             v-for="wb in store.sorted"
             :key="wb.id"
-            :title="wb.title"
-            :subtitle="`${wb.doc.sheets.length} sheet(s)`"
-            @click="router.push(`/sheets/${wb.id}`)"
+            :items="[
+              { id: 'export', label: 'Export & Share', onSelect: () => openExportShare(wb) },
+            ]"
           >
-            <template #icon>
-              <span class="text-xl">{{ wb.icon }}</span>
-            </template>
-            <template #trailing>
-              <div v-if="automationCount(wb.id)" class="flex items-center gap-1 text-system-orange">
-                <PhLightning :size="14" weight="fill" />
-                <span class="text-caption-1">{{ automationCount(wb.id) }}</span>
-              </div>
-            </template>
-          </IOSListItem>
+            <IOSListItem
+              :title="wb.title"
+              :subtitle="`${wb.doc.sheets.length} sheet(s)`"
+              @click="router.push(`/sheets/${wb.id}`)"
+            >
+              <template #icon>
+                <span class="text-xl">{{ wb.icon }}</span>
+              </template>
+              <template #trailing>
+                <div class="flex items-center gap-2">
+                  <button
+                    type="button"
+                    class="flex h-8 w-8 items-center justify-center rounded-full text-system-blue press-scale"
+                    aria-label="Export and share"
+                    @click.stop="openExportShare(wb)"
+                  >
+                    <PhShareNetwork :size="16" weight="fill" />
+                  </button>
+                  <div v-if="automationCount(wb.id)" class="flex items-center gap-1 text-system-orange">
+                    <PhLightning :size="14" weight="fill" />
+                    <span class="text-caption-1">{{ automationCount(wb.id) }}</span>
+                  </div>
+                </div>
+              </template>
+            </IOSListItem>
+          </IOSContextMenu>
         </IOSListGroup>
         <IOSEmptyState v-else title="No sheets yet" subtitle="Create a template with built-in automations" :icon="PhTable">
           <IOSButton @click="showNewSheet = true">Create Sheet</IOSButton>
         </IOSEmptyState>
       </section>
     </div>
+
+    <ExportShareSheet
+      :open="showExportShare"
+      :workbook="exportWorkbook"
+      @close="showExportShare = false"
+    />
 
     <IOSSheet :open="showNewSheet" title="New Workbook" @close="showNewSheet = false">
       <div class="space-y-4 px-4 pb-6">
