@@ -16,9 +16,11 @@ import IOSTextField from '@/components/ui/IOSTextField.vue'
 import IOSRingProgress from '@/components/ui/IOSRingProgress.vue'
 import IOSListGroup from '@/components/ui/IOSListGroup.vue'
 import IOSListItem from '@/components/ui/IOSListItem.vue'
-import IOSContextMenu from '@/components/ui/IOSContextMenu.vue'
+import IOSSwipeRow from '@/components/ui/IOSSwipeRow.vue'
 import StudyHeatmap from '@/components/ui/StudyHeatmap.vue'
-import { PhClock, PhFlame, PhPlus } from '@phosphor-icons/vue'
+import { PhClock, PhFlame, PhPlus, PhTrash } from '@phosphor-icons/vue'
+import type { SwipeAction } from '@/composables/useSwipeGesture'
+import { useHaptics } from '@/composables/useHaptics'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip)
 
@@ -26,6 +28,7 @@ const analyticsStore = useAnalyticsStore()
 const authStore = useAuthStore()
 const tasksStore = useTasksStore()
 const { run } = useAsyncAction()
+const { trigger } = useHaptics()
 
 const showSheet = ref(false)
 const topic = ref('')
@@ -88,6 +91,22 @@ function formatSessionDate(iso: string) {
 }
 
 const recentSessions = computed(() => analyticsStore.focusSessions.slice(0, 20))
+
+function swipeActions(sessionId: string): SwipeAction[] {
+  return [
+    {
+      id: 'delete',
+      label: 'Delete',
+      color: '#fff',
+      background: 'var(--color-system-red)',
+      side: 'trailing',
+      onAction: async () => {
+        await deleteSession(sessionId)
+        trigger('warning')
+      },
+    },
+  ]
+}
 </script>
 
 <template>
@@ -151,25 +170,29 @@ const recentSessions = computed(() => analyticsStore.focusSessions.slice(0, 20))
       <section v-if="recentSessions.length">
         <h3 class="text-headline mb-2 text-primary">Recent sessions</h3>
         <IOSListGroup :inset="false">
-          <IOSContextMenu
+          <IOSSwipeRow
             v-for="session in recentSessions"
             :key="session.id"
-            :items="[
-              {
-                id: 'delete',
-                label: 'Delete',
-                destructive: true,
-                onSelect: () => deleteSession(session.id),
-              },
-            ]"
+            :actions="swipeActions(session.id)"
           >
             <IOSListItem
               :title="session.topic"
               :subtitle="`${session.duration_mins} min · ${formatSessionDate(session.started_at)}`"
-            />
-          </IOSContextMenu>
+            >
+              <template #trailing>
+                <button
+                  type="button"
+                  class="flex h-9 w-9 items-center justify-center rounded-full text-system-red press-scale"
+                  aria-label="Delete session"
+                  @click.stop="deleteSession(session.id)"
+                >
+                  <PhTrash :size="18" />
+                </button>
+              </template>
+            </IOSListItem>
+          </IOSSwipeRow>
         </IOSListGroup>
-        <p class="mt-2 text-caption-2 text-tertiary">Long-press to delete a session</p>
+        <p class="mt-2 text-caption-2 text-tertiary">Swipe left or tap the trash icon to delete</p>
       </section>
     </div>
 
