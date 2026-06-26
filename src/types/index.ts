@@ -66,6 +66,30 @@ export interface StudySession {
   started_at: string
 }
 
+export type ExamColor = 'blue' | 'purple' | 'orange' | 'red' | 'green'
+
+export interface Exam {
+  id: string
+  user_id: string
+  title: string
+  course: string | null
+  exam_at: string
+  location: string | null
+  notes: string | null
+  color: ExamColor
+  created_at: string
+}
+
+export interface ExamPrepItem {
+  id: string
+  user_id: string
+  exam_id: string
+  title: string
+  completed: boolean
+  sort_order: number
+  created_at: string
+}
+
 export interface InterviewProblem {
   id: string
   user_id: string
@@ -77,6 +101,9 @@ export interface InterviewProblem {
   solved_at: string | null
   revisit_date: string | null
   notes: string | null
+  review_count?: number
+  interval_days?: number
+  next_review_at?: string | null
   created_at: string
 }
 
@@ -114,6 +141,8 @@ export interface Database {
       interview_problems: { Row: InterviewProblem; Insert: Omit<InterviewProblem, 'id' | 'created_at'> & { id?: string }; Update: Partial<InterviewProblem> }
       notes: { Row: Note; Insert: Omit<Note, 'id' | 'created_at' | 'updated_at'> & { id?: string }; Update: Partial<Note> }
       project_milestones: { Row: ProjectMilestone; Insert: Omit<ProjectMilestone, 'id' | 'created_at'> & { id?: string }; Update: Partial<ProjectMilestone> }
+      exams: { Row: Exam; Insert: Omit<Exam, 'id' | 'created_at'> & { id?: string }; Update: Partial<Exam> }
+      exam_prep_items: { Row: ExamPrepItem; Insert: Omit<ExamPrepItem, 'id' | 'created_at'> & { id?: string }; Update: Partial<ExamPrepItem> }
     }
   }
 }

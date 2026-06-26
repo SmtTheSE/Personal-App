@@ -13,6 +13,7 @@ import { useNotesStore } from '@/stores/notes'
 import { useMilestonesStore } from '@/stores/milestones'
 import { useAnalyticsStore, useInterviewStore } from '@/stores/analytics'
 import { useSpreadsheetsStore } from '@/stores/spreadsheets'
+import { useExamsStore } from '@/stores/exams'
 import { formatSupabaseError } from '@/lib/errors'
 
 const auth = useAuthStore()
@@ -23,6 +24,7 @@ const tasksStore = useTasksStore()
 const notesStore = useNotesStore()
 const milestonesStore = useMilestonesStore()
 const spreadsheetsStore = useSpreadsheetsStore()
+const examsStore = useExamsStore()
 const analyticsStore = useAnalyticsStore()
 const interviewStore = useInterviewStore()
 
@@ -36,6 +38,7 @@ onMounted(async () => {
       notesStore.fetchNotes(),
       milestonesStore.fetchMilestones(),
       spreadsheetsStore.fetchSpreadsheets(),
+      examsStore.fetchExams(),
       analyticsStore.fetchSessions(),
       interviewStore.fetchProblems(),
     ])

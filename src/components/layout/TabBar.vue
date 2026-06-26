@@ -4,9 +4,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import {
   PhHouse,
+  PhCalendar,
   PhCheckSquare,
   PhTimer,
-  PhFolder,
   PhBooks,
 } from '@phosphor-icons/vue'
 import { useUiStore } from '@/stores/ui'
@@ -22,9 +22,9 @@ const { trigger } = useHaptics()
 
 const tabs = [
   { name: 'dashboard' as TabRouteName, path: '/', icon: PhHouse, label: 'Today' },
+  { name: 'calendar' as TabRouteName, path: '/calendar', icon: PhCalendar, label: 'Plan' },
   { name: 'tasks' as TabRouteName, path: '/tasks', icon: PhCheckSquare, label: 'Tasks' },
   { name: 'focus' as TabRouteName, path: '/focus', icon: PhTimer, label: 'Focus' },
-  { name: 'projects' as TabRouteName, path: '/projects', icon: PhFolder, label: 'Projects' },
   { name: 'library' as TabRouteName, path: '/library', icon: PhBooks, label: 'Library' },
 ]
 

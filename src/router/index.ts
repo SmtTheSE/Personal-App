@@ -29,6 +29,12 @@ const router = createRouter({
           meta: { transition: 'tab-fade', isTab: true },
         },
         {
+          path: 'calendar',
+          name: 'calendar',
+          component: () => import('@/views/CalendarView.vue'),
+          meta: { transition: 'tab-fade', isTab: true },
+        },
+        {
           path: 'tasks',
           name: 'tasks',
           component: () => import('@/views/TasksView.vue'),
@@ -39,6 +45,12 @@ const router = createRouter({
           name: 'focus',
           component: () => import('@/views/FocusView.vue'),
           meta: { transition: 'tab-fade', isTab: true },
+        },
+        {
+          path: 'exams/:id',
+          name: 'exam-detail',
+          component: () => import('@/views/ExamDetailView.vue'),
+          meta: { transition: 'slide-push' },
         },
         {
           path: 'projects',

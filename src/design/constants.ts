@@ -40,7 +40,7 @@ export const ICON_SIZE = {
   large: 28,
 } as const
 
-export const TAB_ROUTES = ['dashboard', 'tasks', 'focus', 'projects', 'library'] as const
+export const TAB_ROUTES = ['dashboard', 'calendar', 'tasks', 'focus', 'library'] as const
 
 export const FOCUS_PRESETS = {
   focus: 25,

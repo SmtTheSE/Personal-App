@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { scheduleNextReview } from '@/lib/spacedRepetition'
 import { supabase } from '@/lib/supabase'
 import type { StudySession, InterviewProblem, ProblemDifficulty, SessionType } from '@/types'
 
@@ -87,9 +88,30 @@ export const useInterviewStore = defineStore('interview', () => {
   })
 
   const solvedCount = computed(() => problems.value.filter((p) => p.solved_at).length)
-  const dueForRevisit = computed(() => {
+
+  const dueForReview = computed(() => {
     const today = new Date().toISOString().split('T')[0]
-    return problems.value.filter((p) => p.revisit_date && p.revisit_date <= today && !p.solved_at)
+    return problems.value.filter((p) => {
+      const due = p.next_review_at ?? p.revisit_date
+      return due && due <= today
+    })
+  })
+
+  const reviewQueue = computed(() =>
+    [...dueForReview.value].sort((a, b) => {
+      const da = a.next_review_at ?? a.revisit_date ?? ''
+      const db = b.next_review_at ?? b.revisit_date ?? ''
+      return da.localeCompare(db)
+    })
+  )
+
+  const otherProblems = computed(() => {
+    const dueIds = new Set(dueForReview.value.map((p) => p.id))
+    let list = problems.value.filter((p) => !dueIds.has(p.id))
+    if (filterDifficulty.value) {
+      list = list.filter((p) => p.difficulty === filterDifficulty.value)
+    }
+    return list
   })
 
   async function fetchProblems() {
@@ -138,9 +160,45 @@ export const useInterviewStore = defineStore('interview', () => {
   }
 
   async function markSolved(id: string) {
+    const problem = problems.value.find((p) => p.id === id)
+    const schedule = scheduleNextReview(problem?.review_count ?? 0, problem?.interval_days ?? 1)
+
     const { data, error } = await supabase
       .from('interview_problems')
-      .update({ solved_at: new Date().toISOString() })
+      .update({
+        solved_at: new Date().toISOString(),
+        review_count: schedule.review_count,
+        interval_days: schedule.interval_days,
+        next_review_at: schedule.next_review_at,
+        revisit_date: schedule.next_review_at,
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+    const idx = problems.value.findIndex((p) => p.id === id)
+    if (idx !== -1) problems.value[idx] = data
+    return data
+  }
+
+  async function recordReview(id: string, remembered: boolean) {
+    const problem = problems.value.find((p) => p.id === id)
+    if (!problem) return
+
+    const schedule = remembered
+      ? scheduleNextReview(problem.review_count ?? 0, problem.interval_days ?? 1)
+      : { review_count: problem.review_count ?? 0, interval_days: 1, next_review_at: scheduleNextReview(0, 1).next_review_at }
+
+    const { data, error } = await supabase
+      .from('interview_problems')
+      .update({
+        review_count: schedule.review_count,
+        interval_days: schedule.interval_days,
+        next_review_at: schedule.next_review_at,
+        revisit_date: schedule.next_review_at,
+        solved_at: new Date().toISOString(),
+      })
       .eq('id', id)
       .select()
       .single()
@@ -163,10 +221,14 @@ export const useInterviewStore = defineStore('interview', () => {
     filterDifficulty,
     filteredProblems,
     solvedCount,
-    dueForRevisit,
+    dueForRevisit: dueForReview,
+    dueForReview,
+    reviewQueue,
+    otherProblems,
     fetchProblems,
     createProblem,
     markSolved,
+    recordReview,
     deleteProblem,
   }
 })

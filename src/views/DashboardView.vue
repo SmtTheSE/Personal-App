@@ -10,6 +10,7 @@ import { useNotesStore } from '@/stores/notes'
 import { useAnalyticsStore, useInterviewStore } from '@/stores/analytics'
 import { useMilestonesStore } from '@/stores/milestones'
 import { useSpreadsheetsStore } from '@/stores/spreadsheets'
+import { useExamsStore } from '@/stores/exams'
 import { useUiStore } from '@/stores/ui'
 import PageShell from '@/components/layout/PageShell.vue'
 import NavBar from '@/components/layout/NavBar.vue'
@@ -18,6 +19,7 @@ import IOSListGroup from '@/components/ui/IOSListGroup.vue'
 import IOSListItem from '@/components/ui/IOSListItem.vue'
 import WidgetMetric from '@/components/ui/WidgetMetric.vue'
 import DeadlineStrip from '@/components/ui/DeadlineStrip.vue'
+import ExamCountdownCard from '@/components/calendar/ExamCountdownCard.vue'
 import IOSRingProgress from '@/components/ui/IOSRingProgress.vue'
 import {
   PhFlame,
@@ -32,6 +34,8 @@ import {
   PhPlus,
   PhTable,
   PhLightning,
+  PhCalendar,
+  PhBrain,
 } from '@phosphor-icons/vue'
 
 const auth = useAuthStore()
@@ -43,6 +47,7 @@ const analyticsStore = useAnalyticsStore()
 const interviewStore = useInterviewStore()
 const milestonesStore = useMilestonesStore()
 const spreadsheetsStore = useSpreadsheetsStore()
+const examsStore = useExamsStore()
 const ui = useUiStore()
 const router = useRouter()
 
@@ -66,6 +71,7 @@ async function handleRefresh() {
     analyticsStore.fetchSessions(),
     interviewStore.fetchProblems(),
     spreadsheetsStore.fetchSpreadsheets(),
+    examsStore.fetchExams(),
   ])
 }
 </script>
@@ -132,6 +138,40 @@ async function handleRefresh() {
         </div>
         <PhArrowRight :size="18" class="shrink-0 text-tertiary" />
       </button>
+
+      <section v-if="examsStore.nextExam">
+        <div class="mb-2 flex items-center justify-between px-1">
+          <h2 class="text-title-2 text-primary">Next Exam</h2>
+          <button type="button" class="text-subheadline text-system-blue press-scale" @click="router.push('/calendar')">
+            <PhCalendar :size="16" class="mr-1 inline" />
+            Calendar
+          </button>
+        </div>
+        <ExamCountdownCard
+          :exam="examsStore.nextExam"
+          :days-until="examsStore.daysUntil(examsStore.nextExam)"
+          :prep-progress="examsStore.prepProgress(examsStore.nextExam.id)"
+          @open="router.push(`/exams/${examsStore.nextExam!.id}`)"
+        />
+      </section>
+
+      <section v-if="interviewStore.reviewQueue.length">
+        <button
+          type="button"
+          class="surface-elevated flex w-full items-center gap-3 p-4 text-left press-scale"
+          :style="{ borderRadius: 'var(--radius-card)' }"
+          @click="router.push('/interview')"
+        >
+          <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-system-orange/15 text-system-orange">
+            <PhBrain :size="22" weight="fill" />
+          </div>
+          <div class="flex-1">
+            <p class="text-headline text-primary">{{ interviewStore.reviewQueue.length }} problems to review</p>
+            <p class="text-footnote text-tertiary">Spaced repetition queue</p>
+          </div>
+          <PhArrowRight :size="18" class="text-tertiary" />
+        </button>
+      </section>
 
       <section v-if="tasksStore.upcomingDeadlines.length">
         <div class="mb-2 flex items-center justify-between px-1">
@@ -269,7 +309,7 @@ async function handleRefresh() {
           >
             <PhCode :size="24" class="text-system-blue" weight="fill" />
             <span class="text-headline text-primary">Interview</span>
-            <span class="text-caption-1 text-tertiary">{{ interviewStore.dueForRevisit.length }} due for review</span>
+            <span class="text-caption-1 text-tertiary">{{ interviewStore.reviewQueue.length }} due for review</span>
           </button>
           <button
             type="button"
