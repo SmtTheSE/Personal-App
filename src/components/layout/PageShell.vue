@@ -44,18 +44,19 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="relative flex min-h-dvh flex-col">
+  <div class="relative flex min-h-dvh flex-col overflow-hidden">
     <slot name="header" />
 
     <div
       ref="scrollRef"
-      class="flex-1 overflow-y-auto overscroll-contain"
+      class="ios-scroll flex-1"
       :style="{ paddingBottom: scrollPaddingBottom }"
     >
       <!-- Pull-to-refresh indicator -->
       <div
         v-if="refreshable"
-        class="flex items-center justify-center overflow-hidden transition-[height] duration-200"
+        class="flex items-center justify-center overflow-hidden"
+        :class="{ 'transition-[height] duration-200 ease-out': !pull.isPulling.value && !pull.isRefreshing.value }"
         :style="{ height: `${pull.pullDistance.value}px` }"
       >
         <div

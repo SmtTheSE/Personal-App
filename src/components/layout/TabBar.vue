@@ -47,7 +47,7 @@ function navigate(path: string) {
 
 <template>
   <nav
-    class="pointer-events-none fixed inset-x-0 z-40 transition-transform duration-300 ease-[var(--ease-ios)] ios-safe-bottom"
+    class="scroll-gpu pointer-events-none fixed inset-x-0 z-40 transition-transform duration-300 ease-[var(--ease-ios)] ios-safe-bottom"
     :style="{
       bottom: `${LAYOUT.tabBarInset}px`,
       transform: isHidden ? 'translateY(calc(100% + 32px))' : 'translateY(0)',

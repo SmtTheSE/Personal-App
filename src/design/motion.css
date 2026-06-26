@@ -95,6 +95,15 @@
   transition: transform var(--duration-normal) var(--ease-ios);
 }
 
+/* Nav title crossfade driven by CSS variable — no Vue opacity transitions during scroll */
+.large-title-collapse {
+  opacity: calc(1 - var(--nav-collapse, 0));
+}
+
+.compact-title-collapse {
+  opacity: var(--nav-collapse, 0);
+}
+
 .sheet-enter-active,
 .sheet-leave-active {
   transition: transform var(--duration-sheet) var(--ease-sheet);

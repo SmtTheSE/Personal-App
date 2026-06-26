@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, computed, ref, type Ref } from 'vue'
+import { inject, ref, type Ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCollapsingNav } from '@/composables/useCollapsingNav'
 import { useUiStore } from '@/stores/ui'
@@ -21,9 +21,6 @@ const ui = useUiStore()
 
 const { isCollapsed, collapseProgress } = useCollapsingNav(scrollRef)
 
-const largeTitleOpacity = computed(() => 1 - collapseProgress.value)
-const compactTitleOpacity = computed(() => collapseProgress.value)
-
 function goBack() {
   router.back()
 }
@@ -40,7 +37,7 @@ function openSearch() {
 <template>
   <header class="sticky top-0 z-30 ios-safe-top">
     <div
-      class="material-glass-bar transition-shadow duration-200"
+      class="material-glass-bar scroll-gpu"
       :class="{ 'shadow-sm': isCollapsed }"
     >
       <!-- Compact bar -->
@@ -62,8 +59,8 @@ function openSearch() {
 
         <h1
           v-if="title && (large ? isCollapsed : true)"
-          class="text-headline text-primary absolute left-1/2 -translate-x-1/2 truncate max-w-[50%]"
-          :style="{ opacity: large ? compactTitleOpacity : 1 }"
+          class="compact-title-collapse text-headline text-primary absolute left-1/2 -translate-x-1/2 truncate max-w-[50%]"
+          :style="{ '--nav-collapse': large ? collapseProgress : 1 }"
         >
           {{ title }}
         </h1>
@@ -94,8 +91,8 @@ function openSearch() {
       <!-- Large title -->
       <div
         v-if="large && title"
-        class="px-4 pb-2 pt-0 transition-opacity duration-200"
-        :style="{ opacity: largeTitleOpacity }"
+        class="large-title-collapse px-4 pb-2 pt-0"
+        :style="{ '--nav-collapse': collapseProgress }"
       >
         <h1 class="text-large-title text-primary">{{ title }}</h1>
       </div>

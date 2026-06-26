@@ -1,33 +1,29 @@
-import { ref, onMounted, onUnmounted, type Ref } from 'vue'
+import { ref, type Ref } from 'vue'
+import { useRafScroll } from './useRafScroll'
 
-const SCROLL_DELTA_THRESHOLD = 8
+const SCROLL_DELTA_THRESHOLD = 12
 
 export function useScrollChrome(scrollTarget: Ref<HTMLElement | null>) {
   const tabBarVisible = ref(true)
   let lastScrollY = 0
 
-  function onScroll() {
-    if (!scrollTarget.value) return
-    const current = scrollTarget.value.scrollTop
+  useRafScroll(scrollTarget, (current) => {
     const delta = current - lastScrollY
+    let next = tabBarVisible.value
 
     if (current <= 0) {
-      tabBarVisible.value = true
+      next = true
     } else if (delta > SCROLL_DELTA_THRESHOLD) {
-      tabBarVisible.value = false
+      next = false
     } else if (delta < -SCROLL_DELTA_THRESHOLD) {
-      tabBarVisible.value = true
+      next = true
+    }
+
+    if (next !== tabBarVisible.value) {
+      tabBarVisible.value = next
     }
 
     lastScrollY = current
-  }
-
-  onMounted(() => {
-    scrollTarget.value?.addEventListener('scroll', onScroll, { passive: true })
-  })
-
-  onUnmounted(() => {
-    scrollTarget.value?.removeEventListener('scroll', onScroll)
   })
 
   function reset() {
