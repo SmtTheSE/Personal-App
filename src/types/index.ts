@@ -54,12 +54,15 @@ export interface Task {
   created_at: string
 }
 
+export type SessionType = 'focus' | 'short_break' | 'long_break' | 'review'
+
 export interface StudySession {
   id: string
   user_id: string
   topic: string
   duration_mins: number
   project_id: string | null
+  session_type?: SessionType
   started_at: string
 }
 
@@ -84,8 +87,20 @@ export interface Note {
   content: string | null
   project_id: string | null
   resource_id: string | null
+  is_pinned?: boolean
+  tags?: string[]
   created_at: string
   updated_at: string
+}
+
+export interface ProjectMilestone {
+  id: string
+  user_id: string
+  project_id: string
+  title: string
+  completed: boolean
+  sort_order: number
+  created_at: string
 }
 
 export interface Database {
@@ -98,6 +113,7 @@ export interface Database {
       study_sessions: { Row: StudySession; Insert: Omit<StudySession, 'id'> & { id?: string }; Update: Partial<StudySession> }
       interview_problems: { Row: InterviewProblem; Insert: Omit<InterviewProblem, 'id' | 'created_at'> & { id?: string }; Update: Partial<InterviewProblem> }
       notes: { Row: Note; Insert: Omit<Note, 'id' | 'created_at' | 'updated_at'> & { id?: string }; Update: Partial<Note> }
+      project_milestones: { Row: ProjectMilestone; Insert: Omit<ProjectMilestone, 'id' | 'created_at'> & { id?: string }; Update: Partial<ProjectMilestone> }
     }
   }
 }

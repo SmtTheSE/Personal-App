@@ -31,6 +31,15 @@ export const useTasksStore = defineStore('tasks', () => {
     })
   )
 
+  const upcomingDeadlines = computed(() => {
+    return tasks.value
+      .filter((t) => t.status !== 'done' && t.due_date)
+      .map((t) => ({ ...t, due: parseISO(t.due_date!) }))
+      .filter((t) => !isPast(t.due) || isToday(t.due))
+      .sort((a, b) => a.due.getTime() - b.due.getTime())
+      .slice(0, 7)
+  })
+
   const studyStreak = computed(() => {
     const completedDates = new Set(
       tasks.value
@@ -186,6 +195,7 @@ export const useTasksStore = defineStore('tasks', () => {
     todayTasks,
     pendingTasks,
     completedToday,
+    upcomingDeadlines,
     studyStreak,
     fetchTasks,
     subscribeToRealtime,

@@ -5,9 +5,9 @@ import { storeToRefs } from 'pinia'
 import {
   PhHouse,
   PhCheckSquare,
+  PhTimer,
   PhFolder,
-  PhBookmarkSimple,
-  PhChartLine,
+  PhBooks,
 } from '@phosphor-icons/vue'
 import { useUiStore } from '@/stores/ui'
 import { useHaptics } from '@/composables/useHaptics'
@@ -23,9 +23,9 @@ const { trigger } = useHaptics()
 const tabs = [
   { name: 'dashboard' as TabRouteName, path: '/', icon: PhHouse, label: 'Today' },
   { name: 'tasks' as TabRouteName, path: '/tasks', icon: PhCheckSquare, label: 'Tasks' },
+  { name: 'focus' as TabRouteName, path: '/focus', icon: PhTimer, label: 'Focus' },
   { name: 'projects' as TabRouteName, path: '/projects', icon: PhFolder, label: 'Projects' },
-  { name: 'resources' as TabRouteName, path: '/resources', icon: PhBookmarkSimple, label: 'Vault' },
-  { name: 'analytics' as TabRouteName, path: '/analytics', icon: PhChartLine, label: 'Stats' },
+  { name: 'library' as TabRouteName, path: '/library', icon: PhBooks, label: 'Library' },
 ]
 
 const activeTab = computed(() => {

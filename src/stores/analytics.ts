@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { supabase } from '@/lib/supabase'
-import type { StudySession, InterviewProblem, ProblemDifficulty } from '@/types'
+import type { StudySession, InterviewProblem, ProblemDifficulty, SessionType } from '@/types'
 
 export const useAnalyticsStore = defineStore('analytics', () => {
   const sessions = ref<StudySession[]>([])
@@ -40,7 +40,12 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     }
   }
 
-  async function logSession(topic: string, durationMins: number, projectId?: string) {
+  async function logSession(
+    topic: string,
+    durationMins: number,
+    projectId?: string,
+    sessionType: SessionType = 'focus'
+  ) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Not authenticated')
 
@@ -51,6 +56,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
         topic,
         duration_mins: durationMins,
         project_id: projectId ?? null,
+        session_type: sessionType,
       })
       .select()
       .single()
@@ -60,7 +66,14 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     return data
   }
 
-  return { sessions, loading, weeklyMinutes, sessionsByDay, fetchSessions, logSession }
+  const todayMinutes = computed(() => {
+    const today = new Date().toISOString().split('T')[0]
+    return sessions.value
+      .filter((s) => s.started_at.startsWith(today) && s.session_type === 'focus')
+      .reduce((sum, s) => sum + s.duration_mins, 0)
+  })
+
+  return { sessions, loading, weeklyMinutes, todayMinutes, sessionsByDay, fetchSessions, logSession }
 })
 
 export const useInterviewStore = defineStore('interview', () => {

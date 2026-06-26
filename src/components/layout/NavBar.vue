@@ -2,7 +2,8 @@
 import { inject, computed, ref, type Ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCollapsingNav } from '@/composables/useCollapsingNav'
-import { PhCaretLeft, PhGear } from '@phosphor-icons/vue'
+import { useUiStore } from '@/stores/ui'
+import { PhCaretLeft, PhGear, PhMagnifyingGlass } from '@phosphor-icons/vue'
 import { LAYOUT } from '@/design/constants'
 
 const props = defineProps<{
@@ -10,11 +11,13 @@ const props = defineProps<{
   large?: boolean
   showBack?: boolean
   showSettings?: boolean
+  showSearch?: boolean
   transparent?: boolean
 }>()
 
 const scrollRef = inject<Ref<HTMLElement | null>>('pageScrollRef', ref(null))
 const router = useRouter()
+const ui = useUiStore()
 
 const { isCollapsed, collapseProgress } = useCollapsingNav(scrollRef)
 
@@ -27,6 +30,10 @@ function goBack() {
 
 function goSettings() {
   router.push('/settings')
+}
+
+function openSearch() {
+  ui.openGlobalSearch()
 }
 </script>
 
@@ -61,16 +68,27 @@ function goSettings() {
           {{ title }}
         </h1>
 
-        <button
-          v-if="showSettings"
-          type="button"
-          class="flex min-h-[44px] min-w-[44px] items-center justify-center text-system-blue press-scale"
-          aria-label="Settings"
-          @click="goSettings"
-        >
-          <PhGear :size="22" />
-        </button>
-        <div v-else class="w-16" />
+        <div class="flex items-center gap-1">
+          <button
+            v-if="showSearch"
+            type="button"
+            class="flex min-h-[44px] min-w-[44px] items-center justify-center text-system-blue press-scale"
+            aria-label="Search"
+            @click="openSearch"
+          >
+            <PhMagnifyingGlass :size="22" />
+          </button>
+          <button
+            v-if="showSettings"
+            type="button"
+            class="flex min-h-[44px] min-w-[44px] items-center justify-center text-system-blue press-scale"
+            aria-label="Settings"
+            @click="goSettings"
+          >
+            <PhGear :size="22" />
+          </button>
+        </div>
+        <div v-if="!showSearch && !showSettings" class="w-16" />
       </div>
 
       <!-- Large title -->

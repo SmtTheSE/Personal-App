@@ -35,10 +35,32 @@ const router = createRouter({
           meta: { transition: 'tab-fade', isTab: true },
         },
         {
+          path: 'focus',
+          name: 'focus',
+          component: () => import('@/views/FocusView.vue'),
+          meta: { transition: 'tab-fade', isTab: true },
+        },
+        {
           path: 'projects',
           name: 'projects',
           component: () => import('@/views/ProjectsView.vue'),
           meta: { transition: 'tab-fade', isTab: true },
+        },
+        {
+          path: 'library',
+          name: 'library',
+          component: () => import('@/views/LibraryView.vue'),
+          meta: { transition: 'tab-fade', isTab: true },
+        },
+        {
+          path: 'resources',
+          redirect: '/library',
+        },
+        {
+          path: 'notes/:id',
+          name: 'note-detail',
+          component: () => import('@/views/NoteDetailView.vue'),
+          meta: { transition: 'slide-push' },
         },
         {
           path: 'projects/:id',
@@ -47,16 +69,10 @@ const router = createRouter({
           meta: { transition: 'slide-push' },
         },
         {
-          path: 'resources',
-          name: 'resources',
-          component: () => import('@/views/ResourcesView.vue'),
-          meta: { transition: 'tab-fade', isTab: true },
-        },
-        {
           path: 'analytics',
           name: 'analytics',
           component: () => import('@/views/AnalyticsView.vue'),
-          meta: { transition: 'tab-fade', isTab: true },
+          meta: { transition: 'slide-push' },
         },
         {
           path: 'interview',

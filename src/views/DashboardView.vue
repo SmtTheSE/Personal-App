@@ -6,11 +6,17 @@ import { useAuthStore } from '@/stores/auth'
 import { useTasksStore } from '@/stores/tasks'
 import { useProjectsStore } from '@/stores/projects'
 import { useResourcesStore } from '@/stores/resources'
+import { useNotesStore } from '@/stores/notes'
+import { useAnalyticsStore, useInterviewStore } from '@/stores/analytics'
+import { useMilestonesStore } from '@/stores/milestones'
+import { useUiStore } from '@/stores/ui'
 import PageShell from '@/components/layout/PageShell.vue'
 import NavBar from '@/components/layout/NavBar.vue'
 import IOSListGroup from '@/components/ui/IOSListGroup.vue'
 import IOSListItem from '@/components/ui/IOSListItem.vue'
 import WidgetMetric from '@/components/ui/WidgetMetric.vue'
+import DeadlineStrip from '@/components/ui/DeadlineStrip.vue'
+import IOSRingProgress from '@/components/ui/IOSRingProgress.vue'
 import {
   PhFlame,
   PhCheckCircle,
@@ -18,12 +24,21 @@ import {
   PhArrowRight,
   PhBookmarkSimple,
   PhCode,
+  PhTimer,
+  PhNotePencil,
+  PhChartLine,
+  PhPlus,
 } from '@phosphor-icons/vue'
 
 const auth = useAuthStore()
 const tasksStore = useTasksStore()
 const projectsStore = useProjectsStore()
 const resourcesStore = useResourcesStore()
+const notesStore = useNotesStore()
+const analyticsStore = useAnalyticsStore()
+const interviewStore = useInterviewStore()
+const milestonesStore = useMilestonesStore()
+const ui = useUiStore()
 const router = useRouter()
 
 const greeting = computed(() => {
@@ -35,12 +50,16 @@ const greeting = computed(() => {
 
 const displayName = computed(() => auth.profile?.username ?? 'Student')
 const activeProject = computed(() => projectsStore.activeProjects[0])
+const studyGoal = computed(() => auth.profile?.study_goal_mins ?? 120)
 
 async function handleRefresh() {
   await Promise.all([
     tasksStore.fetchTasks(),
     projectsStore.fetchProjects(),
     resourcesStore.fetchResources(),
+    notesStore.fetchNotes(),
+    analyticsStore.fetchSessions(),
+    interviewStore.fetchProblems(),
   ])
 }
 </script>
@@ -48,7 +67,7 @@ async function handleRefresh() {
 <template>
   <PageShell refreshable :on-refresh="handleRefresh">
     <template #header>
-      <NavBar :title="`${greeting}, ${displayName}`" large show-settings />
+      <NavBar :title="`${greeting}, ${displayName}`" large show-settings show-search />
     </template>
 
     <div class="space-y-6 px-4 py-4">
@@ -68,6 +87,34 @@ async function handleRefresh() {
           subtitle="tasks done"
         />
       </div>
+
+      <button
+        type="button"
+        class="surface-elevated flex w-full items-center gap-4 p-4 text-left press-scale"
+        :style="{ borderRadius: 'var(--radius-card)' }"
+        @click="router.push('/focus')"
+      >
+        <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-system-blue/15 text-system-blue">
+          <PhTimer :size="28" weight="fill" />
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="text-headline text-primary">Start Focus Session</p>
+          <p class="text-footnote text-tertiary">
+            {{ analyticsStore.todayMinutes }} min studied today · Pomodoro timer
+          </p>
+        </div>
+        <PhArrowRight :size="18" class="shrink-0 text-tertiary" />
+      </button>
+
+      <section v-if="tasksStore.upcomingDeadlines.length">
+        <div class="mb-2 flex items-center justify-between px-1">
+          <h2 class="text-title-2 text-primary">Upcoming</h2>
+          <button type="button" class="text-subheadline text-system-blue press-scale" @click="router.push('/tasks')">
+            All tasks
+          </button>
+        </div>
+        <DeadlineStrip :tasks="tasksStore.upcomingDeadlines" @select="router.push('/tasks')" />
+      </section>
 
       <section>
         <div class="mb-2 flex items-center justify-between px-1">
@@ -95,6 +142,7 @@ async function handleRefresh() {
             </template>
           </IOSListItem>
         </IOSListGroup>
+        <p v-else class="px-1 text-footnote text-tertiary">No tasks due today — you're clear!</p>
       </section>
 
       <section v-if="activeProject">
@@ -120,19 +168,57 @@ async function handleRefresh() {
               <p v-if="activeProject.description" class="text-footnote mt-0.5 line-clamp-2 text-tertiary">
                 {{ activeProject.description }}
               </p>
-              <div v-if="activeProject.tech_stack.length" class="mt-2 flex flex-wrap gap-1">
-                <span
-                  v-for="tech in activeProject.tech_stack.slice(0, 4)"
-                  :key="tech"
-                  class="rounded-md fill-tertiary px-2 py-0.5 text-caption-1 text-secondary"
-                >
-                  {{ tech }}
-                </span>
+              <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--color-fill-tertiary)]">
+                <div
+                  class="h-full rounded-full bg-system-blue transition-all"
+                  :style="{ width: `${milestonesStore.progressForProject(activeProject.id)}%` }"
+                />
               </div>
+              <p class="text-caption-2 mt-1 text-tertiary">
+                {{ milestonesStore.progressForProject(activeProject.id) }}% milestones complete
+              </p>
             </div>
             <PhArrowRight :size="18" class="shrink-0 text-tertiary" />
           </div>
         </button>
+      </section>
+
+      <section v-if="notesStore.recentNotes.length">
+        <div class="mb-2 flex items-center justify-between px-1">
+          <h2 class="text-title-2 text-primary">Recent Notes</h2>
+          <button type="button" class="text-subheadline text-system-blue press-scale" @click="router.push('/library')">
+            Library
+          </button>
+        </div>
+        <IOSListGroup :inset="false">
+          <IOSListItem
+            v-for="note in notesStore.recentNotes.slice(0, 3)"
+            :key="note.id"
+            :title="note.title"
+            :subtitle="format(new Date(note.updated_at), 'MMM d')"
+            @click="router.push(`/notes/${note.id}`)"
+          >
+            <template #icon>
+              <PhNotePencil :size="20" class="text-system-purple" />
+            </template>
+          </IOSListItem>
+        </IOSListGroup>
+      </section>
+
+      <section class="surface-elevated p-4" :style="{ borderRadius: 'var(--radius-card)' }">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-headline text-primary">Weekly Study Goal</h2>
+            <p class="text-footnote text-tertiary">{{ analyticsStore.weeklyMinutes }} / {{ studyGoal }} minutes</p>
+          </div>
+          <IOSRingProgress
+            :value="analyticsStore.weeklyMinutes"
+            :max="studyGoal"
+            :size="72"
+            :stroke-width="8"
+            label="week"
+          />
+        </div>
       </section>
 
       <section>
@@ -142,11 +228,11 @@ async function handleRefresh() {
             type="button"
             class="surface-elevated flex flex-col items-start gap-2 p-4 text-left press-scale"
             :style="{ borderRadius: 'var(--radius-card)' }"
-            @click="router.push('/resources')"
+            @click="router.push('/library')"
           >
             <PhBookmarkSimple :size="24" class="text-system-purple" weight="fill" />
-            <span class="text-headline text-primary">Vault</span>
-            <span class="text-caption-1 text-tertiary">{{ resourcesStore.resources.length }} saved</span>
+            <span class="text-headline text-primary">Library</span>
+            <span class="text-caption-1 text-tertiary">{{ resourcesStore.resources.length }} links · {{ notesStore.notes.length }} notes</span>
           </button>
           <button
             type="button"
@@ -156,10 +242,40 @@ async function handleRefresh() {
           >
             <PhCode :size="24" class="text-system-blue" weight="fill" />
             <span class="text-headline text-primary">Interview</span>
-            <span class="text-caption-1 text-tertiary">Problem tracker</span>
+            <span class="text-caption-1 text-tertiary">{{ interviewStore.dueForRevisit.length }} due for review</span>
+          </button>
+          <button
+            type="button"
+            class="surface-elevated flex flex-col items-start gap-2 p-4 text-left press-scale"
+            :style="{ borderRadius: 'var(--radius-card)' }"
+            @click="router.push('/analytics')"
+          >
+            <PhChartLine :size="24" class="text-system-green" weight="fill" />
+            <span class="text-headline text-primary">Analytics</span>
+            <span class="text-caption-1 text-tertiary">Charts & heatmap</span>
+          </button>
+          <button
+            type="button"
+            class="surface-elevated flex flex-col items-start gap-2 p-4 text-left press-scale"
+            :style="{ borderRadius: 'var(--radius-card)' }"
+            @click="ui.openQuickCapture()"
+          >
+            <PhPlus :size="24" class="text-system-orange" weight="bold" />
+            <span class="text-headline text-primary">Quick Capture</span>
+            <span class="text-caption-1 text-tertiary">Task, link, or note</span>
           </button>
         </div>
       </section>
     </div>
+
+    <button
+      type="button"
+      class="fixed right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-system-blue text-white shadow-lg press-scale ios-safe-bottom"
+      :style="{ bottom: 'calc(var(--tab-bar-offset, 88px) + 8px)' }"
+      aria-label="Quick capture"
+      @click="ui.openQuickCapture()"
+    >
+      <PhPlus :size="26" weight="bold" />
+    </button>
   </PageShell>
 </template>

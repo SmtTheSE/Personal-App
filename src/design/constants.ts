@@ -38,6 +38,12 @@ export const ICON_SIZE = {
   large: 28,
 } as const
 
-export const TAB_ROUTES = ['dashboard', 'tasks', 'projects', 'resources', 'analytics'] as const
+export const TAB_ROUTES = ['dashboard', 'tasks', 'focus', 'projects', 'library'] as const
+
+export const FOCUS_PRESETS = {
+  focus: 25,
+  shortBreak: 5,
+  longBreak: 15,
+} as const
 
 export type TabRouteName = (typeof TAB_ROUTES)[number]

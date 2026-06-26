@@ -2,11 +2,15 @@
 import { onMounted, onUnmounted } from 'vue'
 import { RouterView } from 'vue-router'
 import TabBar from '@/components/layout/TabBar.vue'
+import GlobalSearch from '@/components/ui/GlobalSearch.vue'
+import QuickCaptureSheet from '@/components/ui/QuickCaptureSheet.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { useProjectsStore } from '@/stores/projects'
 import { useResourcesStore } from '@/stores/resources'
 import { useTasksStore } from '@/stores/tasks'
+import { useNotesStore } from '@/stores/notes'
+import { useMilestonesStore } from '@/stores/milestones'
 import { useAnalyticsStore, useInterviewStore } from '@/stores/analytics'
 import { formatSupabaseError } from '@/lib/errors'
 
@@ -15,6 +19,8 @@ const ui = useUiStore()
 const projectsStore = useProjectsStore()
 const resourcesStore = useResourcesStore()
 const tasksStore = useTasksStore()
+const notesStore = useNotesStore()
+const milestonesStore = useMilestonesStore()
 const analyticsStore = useAnalyticsStore()
 const interviewStore = useInterviewStore()
 
@@ -25,6 +31,8 @@ onMounted(async () => {
       projectsStore.fetchProjects(),
       resourcesStore.fetchResources(),
       tasksStore.fetchTasks(),
+      notesStore.fetchNotes(),
+      milestonesStore.fetchMilestones(),
       analyticsStore.fetchSessions(),
       interviewStore.fetchProblems(),
     ])
@@ -43,5 +51,7 @@ onUnmounted(() => {
   <div class="min-h-dvh bg-[var(--color-system-grouped-bg)] dark:bg-[var(--color-system-grouped-bg-dark)]">
     <RouterView />
     <TabBar />
+    <GlobalSearch />
+    <QuickCaptureSheet />
   </div>
 </template>

@@ -12,6 +12,8 @@ export interface Toast {
 export const useUiStore = defineStore('ui', () => {
   const tabBarVisible = ref(true)
   const activeSheetCount = ref(0)
+  const globalSearchOpen = ref(false)
+  const quickCaptureOpen = ref(false)
   const toasts = ref<Toast[]>([])
   let toastId = 0
 
@@ -39,14 +41,36 @@ export const useUiStore = defineStore('ui', () => {
     toasts.value = toasts.value.filter((t) => t.id !== id)
   }
 
+  function openGlobalSearch() {
+    globalSearchOpen.value = true
+  }
+
+  function closeGlobalSearch() {
+    globalSearchOpen.value = false
+  }
+
+  function openQuickCapture() {
+    quickCaptureOpen.value = true
+  }
+
+  function closeQuickCapture() {
+    quickCaptureOpen.value = false
+  }
+
   return {
     tabBarVisible,
     activeSheetCount,
+    globalSearchOpen,
+    quickCaptureOpen,
     toasts,
     setTabBarVisible,
     openSheet,
     closeSheet,
     showToast,
     dismissToast,
+    openGlobalSearch,
+    closeGlobalSearch,
+    openQuickCapture,
+    closeQuickCapture,
   }
 })
