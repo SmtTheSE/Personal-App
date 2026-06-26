@@ -37,4 +37,14 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  build: {
+    rolldownOptions: {
+      onLog(level, log, defaultHandler) {
+        // VueUse 14.3.0 ships misplaced /* #__PURE__ */ comments Rolldown warns on.
+        // Harmless; remove when @vueuse/core releases the upstream fix.
+        if (log.code === 'INVALID_ANNOTATION') return
+        defaultHandler(level, log)
+      },
+    },
+  },
 })
