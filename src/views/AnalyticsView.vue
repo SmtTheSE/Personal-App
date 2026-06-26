@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Tooltip } from 'chart.js'
 import { Bar } from 'vue-chartjs'
-import { format, subDays } from 'date-fns'
+import { format, subDays, parseISO } from 'date-fns'
 import { useAnalyticsStore } from '@/stores/analytics'
 import { useAsyncAction } from '@/composables/useAsyncAction'
 import { useAuthStore } from '@/stores/auth'
@@ -14,6 +14,9 @@ import IOSButton from '@/components/ui/IOSButton.vue'
 import IOSSheet from '@/components/ui/IOSSheet.vue'
 import IOSTextField from '@/components/ui/IOSTextField.vue'
 import IOSRingProgress from '@/components/ui/IOSRingProgress.vue'
+import IOSListGroup from '@/components/ui/IOSListGroup.vue'
+import IOSListItem from '@/components/ui/IOSListItem.vue'
+import IOSContextMenu from '@/components/ui/IOSContextMenu.vue'
 import StudyHeatmap from '@/components/ui/StudyHeatmap.vue'
 import { PhClock, PhFlame, PhPlus } from '@phosphor-icons/vue'
 
@@ -75,6 +78,16 @@ async function logSession() {
   duration.value = '30'
   showSheet.value = false
 }
+
+async function deleteSession(id: string) {
+  await run(() => analyticsStore.deleteSession(id), { successMessage: 'Session deleted' })
+}
+
+function formatSessionDate(iso: string) {
+  return format(parseISO(iso), 'MMM d, h:mm a')
+}
+
+const recentSessions = computed(() => analyticsStore.focusSessions.slice(0, 20))
 </script>
 
 <template>
@@ -134,6 +147,30 @@ async function logSession() {
         <h3 class="text-headline mb-3 text-primary">Activity</h3>
         <StudyHeatmap :data="analyticsStore.sessionsByDay" :weeks="12" />
       </div>
+
+      <section v-if="recentSessions.length">
+        <h3 class="text-headline mb-2 text-primary">Recent sessions</h3>
+        <IOSListGroup :inset="false">
+          <IOSContextMenu
+            v-for="session in recentSessions"
+            :key="session.id"
+            :items="[
+              {
+                id: 'delete',
+                label: 'Delete',
+                destructive: true,
+                onSelect: () => deleteSession(session.id),
+              },
+            ]"
+          >
+            <IOSListItem
+              :title="session.topic"
+              :subtitle="`${session.duration_mins} min · ${formatSessionDate(session.started_at)}`"
+            />
+          </IOSContextMenu>
+        </IOSListGroup>
+        <p class="mt-2 text-caption-2 text-tertiary">Long-press to delete a session</p>
+      </section>
     </div>
 
     <IOSSheet :open="showSheet" title="Log Study Session" @close="showSheet = false">

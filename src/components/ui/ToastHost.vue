@@ -11,6 +11,13 @@ const bottomOffset = computed(
   () =>
     `calc(env(safe-area-inset-bottom, 0px) + ${LAYOUT.tabBarInset}px + ${LAYOUT.tabBarHeight}px + ${LAYOUT.fabMargin}px)`
 )
+
+async function handleAction(toastId: number) {
+  const toast = toasts.value.find((t) => t.id === toastId)
+  if (!toast?.action) return
+  await toast.action.onAction()
+  ui.dismissToast(toastId)
+}
 </script>
 
 <template>
@@ -25,15 +32,22 @@ const bottomOffset = computed(
           v-for="toast in toasts"
           :key="toast.id"
           role="alert"
-          class="pointer-events-auto w-full rounded-2xl px-4 py-3.5 text-subheadline font-medium shadow-xl backdrop-blur-md"
+          class="pointer-events-auto flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3.5 text-subheadline font-medium shadow-xl backdrop-blur-md"
           :class="{
             'bg-[var(--color-system-green)] text-white': toast.type === 'success',
             'bg-[var(--color-system-red)] text-white': toast.type === 'error',
             'surface-elevated text-primary': toast.type === 'info',
           }"
-          @click="ui.dismissToast(toast.id)"
         >
-          {{ toast.message }}
+          <span class="min-w-0 flex-1" @click="ui.dismissToast(toast.id)">{{ toast.message }}</span>
+          <button
+            v-if="toast.action"
+            type="button"
+            class="shrink-0 rounded-lg px-2 py-1 text-body font-semibold underline press-scale"
+            @click="handleAction(toast.id)"
+          >
+            {{ toast.action.label }}
+          </button>
         </div>
       </TransitionGroup>
     </div>

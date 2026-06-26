@@ -70,11 +70,37 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   const todayMinutes = computed(() => {
     const today = new Date().toISOString().split('T')[0]
     return sessions.value
-      .filter((s) => s.started_at.startsWith(today) && s.session_type === 'focus')
+      .filter((s) => s.started_at.startsWith(today) && (s.session_type ?? 'focus') === 'focus')
       .reduce((sum, s) => sum + s.duration_mins, 0)
   })
 
-  return { sessions, loading, weeklyMinutes, todayMinutes, sessionsByDay, fetchSessions, logSession }
+  async function deleteSession(id: string) {
+    const { error } = await supabase.from('study_sessions').delete().eq('id', id)
+    if (error) throw error
+    sessions.value = sessions.value.filter((s) => s.id !== id)
+  }
+
+  const focusSessions = computed(() =>
+    sessions.value.filter((s) => (s.session_type ?? 'focus') === 'focus')
+  )
+
+  const todayFocusSessions = computed(() => {
+    const today = new Date().toISOString().split('T')[0]
+    return focusSessions.value.filter((s) => s.started_at.startsWith(today))
+  })
+
+  return {
+    sessions,
+    loading,
+    weeklyMinutes,
+    todayMinutes,
+    sessionsByDay,
+    focusSessions,
+    todayFocusSessions,
+    fetchSessions,
+    logSession,
+    deleteSession,
+  }
 })
 
 export const useInterviewStore = defineStore('interview', () => {

@@ -1,19 +1,25 @@
 <script setup lang="ts">
-import { ref, watch, onUnmounted } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
+import { format, parseISO } from 'date-fns'
 import { useRouter } from 'vue-router'
 import { useFocusTimer } from '@/composables/useFocusTimer'
 import { useAnalyticsStore } from '@/stores/analytics'
 import { useProjectsStore } from '@/stores/projects'
+import { useUiStore } from '@/stores/ui'
 import { useAsyncAction } from '@/composables/useAsyncAction'
 import { useAuthStore } from '@/stores/auth'
 import PageShell from '@/components/layout/PageShell.vue'
 import NavBar from '@/components/layout/NavBar.vue'
 import IOSTextField from '@/components/ui/IOSTextField.vue'
+import IOSListGroup from '@/components/ui/IOSListGroup.vue'
+import IOSListItem from '@/components/ui/IOSListItem.vue'
+import IOSContextMenu from '@/components/ui/IOSContextMenu.vue'
 import { PhPlay, PhPause, PhArrowCounterClockwise, PhChartLine } from '@phosphor-icons/vue'
 import type { TimerPhase } from '@/composables/useFocusTimer'
 
 const router = useRouter()
 const auth = useAuthStore()
+const ui = useUiStore()
 const projectsStore = useProjectsStore()
 const analyticsStore = useAnalyticsStore()
 const { run } = useAsyncAction()
@@ -36,19 +42,41 @@ const phases: { id: TimerPhase; label: string; mins: number }[] = [
 
 const loggedOnPause = ref(false)
 
+const recentSessions = computed(() => analyticsStore.todayFocusSessions)
+
 async function logCurrentSession() {
   const mins = timer.getElapsedMinutes()
   if (mins < 1 || phase.value !== 'focus') return
-  await run(
-    () =>
-      analyticsStore.logSession(
-        topic.value,
-        mins,
-        projectId.value ?? undefined,
-        timer.getSessionType()
-      ),
-    { successMessage: `${mins} min logged` }
+
+  const session = await run(() =>
+    analyticsStore.logSession(
+      topic.value,
+      mins,
+      projectId.value ?? undefined,
+      timer.getSessionType()
+    )
   )
+  if (!session) return
+
+  ui.showToast(`${mins} min logged`, 'success', {
+    durationMs: 8000,
+    action: {
+      label: 'Undo',
+      onAction: async () => {
+        await run(() => analyticsStore.deleteSession(session.id), {
+          successMessage: 'Session removed',
+        })
+      },
+    },
+  })
+}
+
+async function deleteSession(id: string) {
+  await run(() => analyticsStore.deleteSession(id), { successMessage: 'Session deleted' })
+}
+
+function formatSessionTime(iso: string) {
+  return format(parseISO(iso), 'h:mm a')
 }
 
 async function toggleTimer() {
@@ -206,6 +234,30 @@ onUnmounted(() => {
           />
         </div>
       </div>
+
+      <section v-if="recentSessions.length" class="mt-8 w-full max-w-sm">
+        <h2 class="text-headline mb-2 px-1 text-primary">Today's sessions</h2>
+        <IOSListGroup :inset="false">
+          <IOSContextMenu
+            v-for="session in recentSessions"
+            :key="session.id"
+            :items="[
+              {
+                id: 'delete',
+                label: 'Delete',
+                destructive: true,
+                onSelect: () => deleteSession(session.id),
+              },
+            ]"
+          >
+            <IOSListItem
+              :title="session.topic"
+              :subtitle="`${session.duration_mins} min · ${formatSessionTime(session.started_at)}`"
+            />
+          </IOSContextMenu>
+        </IOSListGroup>
+        <p class="mt-2 px-1 text-caption-2 text-tertiary">Long-press a session to delete</p>
+      </section>
     </div>
   </PageShell>
 </template>

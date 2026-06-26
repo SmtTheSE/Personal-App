@@ -3,10 +3,16 @@ import { ref } from 'vue'
 
 export type ToastType = 'success' | 'error' | 'info'
 
+export interface ToastAction {
+  label: string
+  onAction: () => void | Promise<void>
+}
+
 export interface Toast {
   id: number
   message: string
   type: ToastType
+  action?: ToastAction
 }
 
 export const useUiStore = defineStore('ui', () => {
@@ -29,9 +35,22 @@ export const useUiStore = defineStore('ui', () => {
     activeSheetCount.value = Math.max(0, activeSheetCount.value - 1)
   }
 
-  function showToast(message: string, type: ToastType = 'info', durationMs = 4000) {
+  function showToast(
+    message: string,
+    type: ToastType = 'info',
+    durationOrOptions: number | { durationMs?: number; action?: ToastAction } = 4000
+  ) {
+    let durationMs = 4000
+    let action: ToastAction | undefined
+    if (typeof durationOrOptions === 'number') {
+      durationMs = durationOrOptions
+    } else {
+      durationMs = durationOrOptions.durationMs ?? 4000
+      action = durationOrOptions.action
+    }
+
     const id = ++toastId
-    toasts.value.push({ id, message, type })
+    toasts.value.push({ id, message, type, action })
     setTimeout(() => {
       toasts.value = toasts.value.filter((t) => t.id !== id)
     }, durationMs)
