@@ -130,6 +130,17 @@ export interface ProjectMilestone {
   created_at: string
 }
 
+export interface UserIntegration {
+  id: string
+  user_id: string
+  provider: 'github' | 'vercel'
+  access_token: string
+  refresh_token: string | null
+  metadata: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -143,6 +154,7 @@ export interface Database {
       project_milestones: { Row: ProjectMilestone; Insert: Omit<ProjectMilestone, 'id' | 'created_at'> & { id?: string }; Update: Partial<ProjectMilestone> }
       exams: { Row: Exam; Insert: Omit<Exam, 'id' | 'created_at'> & { id?: string }; Update: Partial<Exam> }
       exam_prep_items: { Row: ExamPrepItem; Insert: Omit<ExamPrepItem, 'id' | 'created_at'> & { id?: string }; Update: Partial<ExamPrepItem> }
+      user_integrations: { Row: UserIntegration; Insert: Omit<UserIntegration, 'id' | 'created_at' | 'updated_at'> & { id?: string }; Update: Partial<UserIntegration> }
     }
   }
 }

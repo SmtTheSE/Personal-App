@@ -2,6 +2,8 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProjectsStore } from '@/stores/projects'
+import { useIntegrationsStore } from '@/stores/integrations'
+import { useAuthStore } from '@/stores/auth'
 import { useAsyncAction } from '@/composables/useAsyncAction'
 import { gradientFromString, initialsFromString } from '@/lib/color'
 import PageShell from '@/components/layout/PageShell.vue'
@@ -12,14 +14,21 @@ import IOSTextField from '@/components/ui/IOSTextField.vue'
 import IOSTextArea from '@/components/ui/IOSTextArea.vue'
 import IOSEmptyState from '@/components/ui/IOSEmptyState.vue'
 import IOSChip from '@/components/ui/IOSChip.vue'
-import { PhPlus, PhGithubLogo, PhGlobe, PhFolder, PhSquaresFour, PhList } from '@phosphor-icons/vue'
+import IOSListGroup from '@/components/ui/IOSListGroup.vue'
+import IOSListItem from '@/components/ui/IOSListItem.vue'
+import IOSSkeleton from '@/components/ui/IOSSkeleton.vue'
+import { PhPlus, PhGithubLogo, PhGlobe, PhFolder, PhSquaresFour, PhList, PhDownloadSimple } from '@phosphor-icons/vue'
 import type { ProjectStatus } from '@/types'
+import type { GitHubRepo } from '@/types/integrations'
 
 const projectsStore = useProjectsStore()
+const integrations = useIntegrationsStore()
+const auth = useAuthStore()
 const router = useRouter()
 const { run } = useAsyncAction()
 
 const showSheet = ref(false)
+const showImportSheet = ref(false)
 const viewMode = ref<'list' | 'grid'>('list')
 const title = ref('')
 const description = ref('')
@@ -55,6 +64,22 @@ async function createProject() {
   showSheet.value = false
   router.push(`/projects/${project.id}`)
 }
+
+async function openImportSheet() {
+  showImportSheet.value = true
+  await integrations.fetchStatuses()
+  if (!integrations.githubConnected) return
+  await run(() => integrations.fetchGitHubRepos())
+}
+
+function selectRepo(repo: GitHubRepo) {
+  title.value = repo.name
+  description.value = repo.description ?? ''
+  techStack.value = repo.language ?? ''
+  repoUrl.value = repo.html_url
+  showImportSheet.value = false
+  showSheet.value = true
+}
 </script>
 
 <template>
@@ -82,14 +107,24 @@ async function createProject() {
               <PhSquaresFour :size="18" />
             </button>
           </div>
-          <button
-            type="button"
-            class="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-system-blue)] text-white press-scale"
-            aria-label="Add project"
-            @click="showSheet = true"
-          >
-            <PhPlus :size="20" weight="bold" />
-          </button>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              class="flex h-11 w-11 items-center justify-center rounded-full fill-tertiary text-system-blue press-scale"
+              aria-label="Import from GitHub"
+              @click="openImportSheet"
+            >
+              <PhDownloadSimple :size="20" />
+            </button>
+            <button
+              type="button"
+              class="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-system-blue)] text-white press-scale"
+              aria-label="Add project"
+              @click="showSheet = true"
+            >
+              <PhPlus :size="20" weight="bold" />
+            </button>
+          </div>
         </div>
       </NavBar>
     </template>
@@ -172,6 +207,31 @@ async function createProject() {
         <IOSTextField v-model="repoUrl" label="Repository URL" placeholder="https://github.com/..." />
         <IOSButton type="button" block variant="filled" @click="createProject">Create Project</IOSButton>
       </div>
+    </IOSSheet>
+
+    <IOSSheet :open="showImportSheet" title="Import from GitHub" detent="large" @close="showImportSheet = false">
+      <div v-if="!integrations.githubConnected" class="space-y-4 text-center">
+        <PhGithubLogo :size="40" class="mx-auto text-primary" weight="fill" />
+        <p class="text-footnote text-tertiary">
+          Connect GitHub in Settings (with repo access) to import repositories.
+        </p>
+        <IOSButton block @click="auth.signInWithGitHub()">Connect GitHub</IOSButton>
+        <IOSButton block variant="bordered" @click="router.push('/settings')">Open Settings</IOSButton>
+      </div>
+      <IOSSkeleton v-else-if="integrations.loading" />
+      <IOSListGroup v-else :inset="false">
+        <IOSListItem
+          v-for="repo in integrations.githubRepos"
+          :key="repo.id"
+          :title="repo.full_name"
+          :subtitle="repo.description ?? repo.language ?? 'Repository'"
+          @click="selectRepo(repo)"
+        >
+          <template #icon>
+            <PhGithubLogo :size="22" class="text-primary" />
+          </template>
+        </IOSListItem>
+      </IOSListGroup>
     </IOSSheet>
   </PageShell>
 </template>

@@ -11,6 +11,7 @@ import { useAnalyticsStore, useInterviewStore } from '@/stores/analytics'
 import { useMilestonesStore } from '@/stores/milestones'
 import { useSpreadsheetsStore } from '@/stores/spreadsheets'
 import { useExamsStore } from '@/stores/exams'
+import { useIntegrationsStore } from '@/stores/integrations'
 import { useUiStore } from '@/stores/ui'
 import PageShell from '@/components/layout/PageShell.vue'
 import NavBar from '@/components/layout/NavBar.vue'
@@ -36,6 +37,7 @@ import {
   PhLightning,
   PhCalendar,
   PhBrain,
+  PhRocketLaunch,
 } from '@phosphor-icons/vue'
 
 const auth = useAuthStore()
@@ -48,6 +50,7 @@ const interviewStore = useInterviewStore()
 const milestonesStore = useMilestonesStore()
 const spreadsheetsStore = useSpreadsheetsStore()
 const examsStore = useExamsStore()
+const integrationsStore = useIntegrationsStore()
 const ui = useUiStore()
 const router = useRouter()
 
@@ -72,6 +75,7 @@ async function handleRefresh() {
     interviewStore.fetchProblems(),
     spreadsheetsStore.fetchSpreadsheets(),
     examsStore.fetchExams(),
+    integrationsStore.fetchStatuses().catch(() => {}),
   ])
 }
 </script>
@@ -135,6 +139,29 @@ async function handleRefresh() {
         </div>
         <div v-if="spreadsheetsStore.sorted.length" class="flex items-center gap-1 text-system-orange">
           <PhLightning :size="16" weight="fill" />
+        </div>
+        <PhArrowRight :size="18" class="shrink-0 text-tertiary" />
+      </button>
+
+      <button
+        type="button"
+        class="surface-elevated flex w-full items-center gap-4 p-4 text-left press-scale"
+        :style="{ borderRadius: 'var(--radius-card)' }"
+        @click="router.push('/deployments')"
+      >
+        <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-system-purple/15 text-system-purple">
+          <PhRocketLaunch :size="28" weight="fill" />
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="text-headline text-primary">Deployments</p>
+          <p class="text-footnote text-tertiary">
+            <template v-if="integrationsStore.githubConnected || integrationsStore.vercelConnected">
+              GitHub & Vercel linked · deploy analytics
+            </template>
+            <template v-else>
+              Connect GitHub & Vercel for repo and deploy status
+            </template>
+          </p>
         </div>
         <PhArrowRight :size="18" class="shrink-0 text-tertiary" />
       </button>

@@ -87,6 +87,12 @@ const router = createRouter({
           meta: { transition: 'slide-push' },
         },
         {
+          path: 'deployments',
+          name: 'deployments',
+          component: () => import('@/views/DeploymentsView.vue'),
+          meta: { transition: 'slide-push' },
+        },
+        {
           path: 'interview',
           name: 'interview',
           component: () => import('@/views/InterviewView.vue'),

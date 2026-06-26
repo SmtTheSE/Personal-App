@@ -36,13 +36,21 @@ export const useAuthStore = defineStore('auth', () => {
 
     if (user.value) {
       await ensureProfile()
+      if (currentSession?.provider_token) {
+        const { useIntegrationsStore } = await import('@/stores/integrations')
+        useIntegrationsStore().syncGithubFromSession().catch(() => {})
+      }
     }
 
-    supabase.auth.onAuthStateChange(async (_event, newSession) => {
+    supabase.auth.onAuthStateChange(async (event, newSession) => {
       session.value = newSession
       user.value = newSession?.user ?? null
       if (user.value) {
         await ensureProfile()
+        if (event === 'SIGNED_IN' && newSession?.provider_token) {
+          const { useIntegrationsStore } = await import('@/stores/integrations')
+          useIntegrationsStore().syncGithubFromSession().catch(() => {})
+        }
       } else {
         profile.value = null
       }
@@ -183,7 +191,10 @@ export const useAuthStore = defineStore('auth', () => {
       const redirectTo = `${window.location.origin}/`
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
-        options: { redirectTo },
+        options: {
+          redirectTo,
+          scopes: 'read:user repo',
+        },
       })
       if (error) throw error
     } finally {

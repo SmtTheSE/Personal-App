@@ -48,6 +48,9 @@ In [Supabase → Authentication → URL Configuration](https://supabase.com/dash
 |-----|-------|
 | `VITE_SUPABASE_URL` | `https://qeocmqftodajblvajnhg.supabase.co` |
 | `VITE_SUPABASE_ANON_KEY` | your Supabase anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase **service role** key (server-only — never expose as `VITE_`) |
+
+The service role key powers `/api/github/repos` and `/api/vercel/dashboard` so integration tokens stay off the client.
 
 5. Click **Deploy** → copy your Vercel URL (e.g. `https://personal-app-xxx.vercel.app`)
 6. Update GitHub OAuth **Homepage URL** and Supabase **Site URL** / **Redirect URLs** with your real Vercel URL
@@ -60,11 +63,25 @@ vercel login
 vercel link
 vercel env add VITE_SUPABASE_URL
 vercel env add VITE_SUPABASE_ANON_KEY
+vercel env add SUPABASE_SERVICE_ROLE_KEY
 vercel --prod
 ```
 
-## 5. Verify
+## 6. Integrations (GitHub repos + Vercel deploys)
+
+1. Run `supabase/migrations/v5_integrations.sql` (or the tail of `schema.sql`) in Supabase SQL Editor if not already applied.
+2. In Nexus **Settings → Integrations**:
+   - **GitHub:** sign in with GitHub (requests `repo` scope). Token is saved to `user_integrations` after OAuth.
+   - **Vercel:** paste a [personal access token](https://vercel.com/account/tokens).
+3. Use **Projects → import** to pick a repo and auto-fill `repo_url`.
+4. Open **Deployments** for linked repos, live status, and deploy charts.
+
+API routes run as Vercel serverless functions (`nexus/api/`). Local dev: use `vercel dev` (not `vite` alone) to hit `/api/*`.
+
+## 7. Verify
 
 - [ ] Email sign-up / sign-in works
 - [ ] GitHub OAuth redirects back to your Vercel site
 - [ ] Tasks, projects, resources load after login
+- [ ] GitHub repo import works (Settings → connect, Projects → import)
+- [ ] Vercel token saves and Deployments dashboard loads
