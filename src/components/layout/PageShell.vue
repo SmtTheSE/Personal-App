@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onUnmounted, watch } from 'vue'
+import { computed, onUnmounted, watch, toRef } from 'vue'
 import { useScrollChrome } from '@/composables/useScrollChrome'
 import { usePullToRefresh } from '@/composables/usePullToRefresh'
 import { useUiStore } from '@/stores/ui'
@@ -24,8 +24,8 @@ const uiStore = useUiStore()
 
 const { tabBarVisible, reset: resetChrome } = useScrollChrome()
 const pull = usePullToRefresh(async () => {
-  if (props.refreshable && props.onRefresh) await props.onRefresh()
-})
+  if (props.onRefresh) await props.onRefresh()
+}, toRef(props, 'refreshable'))
 
 watch(tabBarVisible, (v) => uiStore.setTabBarVisible(v))
 

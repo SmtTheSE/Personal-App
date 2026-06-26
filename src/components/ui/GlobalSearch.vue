@@ -126,15 +126,21 @@ watch(
   (open) => {
     if (open) {
       document.body.style.overflow = 'hidden'
+      document.documentElement.style.overflow = 'hidden'
       setTimeout(() => document.getElementById('global-search-input')?.focus(), 50)
     } else {
       document.body.style.overflow = ''
+      document.documentElement.style.overflow = ''
     }
   }
 )
 
 onMounted(() => window.addEventListener('keydown', onKeydown))
-onUnmounted(() => window.removeEventListener('keydown', onKeydown))
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKeydown)
+  document.body.style.overflow = ''
+  document.documentElement.style.overflow = ''
+})
 </script>
 
 <template>

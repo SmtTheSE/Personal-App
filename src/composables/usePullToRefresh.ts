@@ -1,4 +1,4 @@
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, type Ref } from 'vue'
 
 const PULL_THRESHOLD = 80
 const MAX_PULL = 120
@@ -7,15 +7,22 @@ function pageScrollTop(): number {
   return window.scrollY || document.documentElement.scrollTop || 0
 }
 
-export function usePullToRefresh(onRefresh: () => Promise<void>) {
+export function usePullToRefresh(
+  onRefresh: () => Promise<void>,
+  enabled: Ref<boolean> | boolean = true
+) {
   const isPulling = ref(false)
   const pullDistance = ref(0)
   const isRefreshing = ref(false)
   let startY = 0
   let tracking = false
 
+  function isEnabled() {
+    return typeof enabled === 'boolean' ? enabled : enabled.value
+  }
+
   function onTouchStart(e: TouchEvent) {
-    if (pageScrollTop() > 0 || isRefreshing.value) return
+    if (!isEnabled() || pageScrollTop() > 0 || isRefreshing.value) return
     startY = e.touches[0].clientY
     tracking = true
     isPulling.value = false
@@ -24,13 +31,24 @@ export function usePullToRefresh(onRefresh: () => Promise<void>) {
 
   function onTouchMove(e: TouchEvent) {
     if (!tracking || isRefreshing.value) return
-    if (pageScrollTop() > 0) {
+
+    const delta = e.touches[0].clientY - startY
+
+    // Finger moving up — user is scrolling into content, not pulling to refresh
+    if (delta < -6) {
+      tracking = false
       isPulling.value = false
       pullDistance.value = 0
       return
     }
 
-    const delta = e.touches[0].clientY - startY
+    if (pageScrollTop() > 0) {
+      tracking = false
+      isPulling.value = false
+      pullDistance.value = 0
+      return
+    }
+
     if (delta > 4) {
       isPulling.value = true
       pullDistance.value = Math.min(delta * 0.4, MAX_PULL)

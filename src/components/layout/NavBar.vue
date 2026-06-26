@@ -5,7 +5,7 @@ import { useUiStore } from '@/stores/ui'
 import { PhCaretLeft, PhGear, PhMagnifyingGlass } from '@phosphor-icons/vue'
 import { LAYOUT } from '@/design/constants'
 
-const props = defineProps<{
+defineProps<{
   title?: string
   large?: boolean
   showBack?: boolean
@@ -33,69 +33,72 @@ function openSearch() {
 </script>
 
 <template>
-  <header class="sticky top-0 z-30 ios-safe-top">
-    <div
-      class="material-glass-bar scroll-gpu"
-      :class="{ 'shadow-sm': isCollapsed }"
-    >
-      <!-- Compact bar -->
+  <header>
+    <!-- Only the compact bar is sticky — large titles scroll with page content -->
+    <div class="sticky top-0 z-30 ios-safe-top">
       <div
-        class="flex items-center justify-between px-4"
-        :style="{ height: `${LAYOUT.navCompactHeight}px` }"
+        class="material-glass-bar scroll-gpu"
+        :class="{ 'shadow-sm': isCollapsed }"
       >
-        <button
-          v-if="showBack"
-          type="button"
-          class="flex min-h-[44px] min-w-[44px] items-center gap-0.5 text-system-blue press-scale"
-          aria-label="Go back"
-          @click="goBack"
+        <div
+          class="relative grid grid-cols-[auto_1fr_auto] items-center gap-2 px-4"
+          :style="{ height: `${LAYOUT.navCompactHeight}px` }"
         >
-          <PhCaretLeft :size="20" weight="bold" />
-          <span class="text-body">Back</span>
-        </button>
-        <div v-else class="w-16" />
+          <div class="flex min-w-[44px] items-center">
+            <button
+              v-if="showBack"
+              type="button"
+              class="flex min-h-[44px] min-w-[44px] items-center gap-0.5 text-system-blue press-scale"
+              aria-label="Go back"
+              @click="goBack"
+            >
+              <PhCaretLeft :size="20" weight="bold" />
+              <span class="text-body">Back</span>
+            </button>
+          </div>
 
-        <h1
-          v-if="title && (large ? isCollapsed : true)"
-          class="compact-title-collapse text-headline text-primary absolute left-1/2 -translate-x-1/2 truncate max-w-[50%]"
-          :style="{ '--nav-collapse': large ? collapseProgress : 1 }"
-        >
-          {{ title }}
-        </h1>
+          <h1
+            v-if="title && (large ? isCollapsed : true)"
+            class="compact-title-collapse pointer-events-none truncate text-center text-headline text-primary"
+            :style="{ '--nav-collapse': large ? collapseProgress : 1 }"
+          >
+            {{ title }}
+          </h1>
+          <div v-else />
 
-        <div class="flex items-center gap-1">
-          <button
-            v-if="showSearch"
-            type="button"
-            class="flex min-h-[44px] min-w-[44px] items-center justify-center text-system-blue press-scale"
-            aria-label="Search"
-            @click="openSearch"
-          >
-            <PhMagnifyingGlass :size="22" />
-          </button>
-          <button
-            v-if="showSettings"
-            type="button"
-            class="flex min-h-[44px] min-w-[44px] items-center justify-center text-system-blue press-scale"
-            aria-label="Settings"
-            @click="goSettings"
-          >
-            <PhGear :size="22" />
-          </button>
+          <div class="relative z-10 flex items-center justify-end gap-1">
+            <button
+              v-if="showSearch"
+              type="button"
+              class="flex min-h-[44px] min-w-[44px] items-center justify-center text-system-blue press-scale"
+              aria-label="Search"
+              @click="openSearch"
+            >
+              <PhMagnifyingGlass :size="22" />
+            </button>
+            <button
+              v-if="showSettings"
+              type="button"
+              class="flex min-h-[44px] min-w-[44px] items-center justify-center text-system-blue press-scale"
+              aria-label="Settings"
+              @click="goSettings"
+            >
+              <PhGear :size="22" />
+            </button>
+          </div>
         </div>
-        <div v-if="!showSearch && !showSettings" class="w-16" />
-      </div>
 
-      <!-- Large title -->
-      <div
-        v-if="large && title"
-        class="large-title-collapse px-4 pb-2 pt-0"
-        :style="{ '--nav-collapse': collapseProgress }"
-      >
-        <h1 class="text-large-title text-primary">{{ title }}</h1>
+        <slot />
       </div>
+    </div>
 
-      <slot />
+    <!-- Large title scrolls away with content so touch-scroll works in the top area -->
+    <div
+      v-if="large && title"
+      class="large-title-collapse pointer-events-none px-4 pb-2 pt-0"
+      :style="{ '--nav-collapse': collapseProgress }"
+    >
+      <h1 class="text-large-title text-primary">{{ title }}</h1>
     </div>
   </header>
 </template>
