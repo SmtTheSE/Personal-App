@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, provide, onMounted, onUnmounted, watch } from 'vue'
+import { computed, onUnmounted, watch } from 'vue'
 import { useScrollChrome } from '@/composables/useScrollChrome'
 import { usePullToRefresh } from '@/composables/usePullToRefresh'
 import { useUiStore } from '@/stores/ui'
@@ -20,53 +20,37 @@ const scrollPaddingBottom = computed(() => {
   return `calc(${base + fab}px + env(safe-area-inset-bottom, 0px))`
 })
 
-const scrollRef = ref<HTMLElement | null>(null)
 const uiStore = useUiStore()
 
-provide('pageScrollRef', scrollRef)
-
-const { tabBarVisible, reset: resetChrome } = useScrollChrome(scrollRef)
-const pull = usePullToRefresh(scrollRef, async () => {
-  if (props.onRefresh) await props.onRefresh()
+const { tabBarVisible, reset: resetChrome } = useScrollChrome()
+const pull = usePullToRefresh(async () => {
+  if (props.refreshable && props.onRefresh) await props.onRefresh()
 })
 
 watch(tabBarVisible, (v) => uiStore.setTabBarVisible(v))
 
-onMounted(() => {
-  if (props.refreshable) pull.attach()
-})
-
 onUnmounted(() => {
-  pull.detach()
   resetChrome()
   uiStore.setTabBarVisible(true)
 })
 </script>
 
 <template>
-  <div class="relative flex min-h-dvh flex-col overflow-hidden">
-    <slot name="header" />
-
+  <div class="relative min-h-dvh" :style="{ paddingBottom: scrollPaddingBottom }">
     <div
-      ref="scrollRef"
-      class="ios-scroll flex-1"
-      :style="{ paddingBottom: scrollPaddingBottom }"
+      v-if="refreshable"
+      class="pointer-events-none flex items-center justify-center overflow-hidden"
+      :class="{ 'transition-[height] duration-200 ease-out': !pull.isPulling.value && !pull.isRefreshing.value }"
+      :style="{ height: `${pull.pullDistance.value}px` }"
     >
-      <!-- Pull-to-refresh indicator -->
       <div
-        v-if="refreshable"
-        class="flex items-center justify-center overflow-hidden"
-        :class="{ 'transition-[height] duration-200 ease-out': !pull.isPulling.value && !pull.isRefreshing.value }"
-        :style="{ height: `${pull.pullDistance.value}px` }"
-      >
-        <div
-          class="h-6 w-6 rounded-full border-2 border-system-blue border-t-transparent"
-          :class="{ 'animate-[spin-ios_0.8s_linear_infinite]': pull.isRefreshing.value }"
-          :style="{ opacity: Math.min(1, pull.pullDistance.value / 60) }"
-        />
-      </div>
-
-      <slot />
+        class="h-6 w-6 rounded-full border-2 border-system-blue border-t-transparent"
+        :class="{ 'animate-[spin-ios_0.8s_linear_infinite]': pull.isRefreshing.value }"
+        :style="{ opacity: Math.min(1, pull.pullDistance.value / 60) }"
+      />
     </div>
+
+    <slot name="header" />
+    <slot />
   </div>
 </template>

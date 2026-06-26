@@ -9,7 +9,7 @@
     -webkit-tap-highlight-color: transparent;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    height: 100%;
+    -webkit-overflow-scrolling: touch;
   }
 
   body {
@@ -23,8 +23,6 @@
     background-color: var(--color-system-grouped-bg);
     color: var(--color-label);
     overscroll-behavior: none;
-    height: 100%;
-    overflow: hidden;
   }
 
   .dark body {
@@ -77,6 +75,7 @@
 
   /* Native-feel momentum scrolling on iOS / touch devices */
   .ios-scroll {
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;

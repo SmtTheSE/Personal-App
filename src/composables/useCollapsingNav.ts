@@ -1,11 +1,11 @@
-import { ref, computed, type Ref } from 'vue'
+import { ref, computed } from 'vue'
 import { LAYOUT } from '@/design/constants'
 import { useRafScroll } from './useRafScroll'
 
-export function useCollapsingNav(scrollTarget: Ref<HTMLElement | null>) {
+export function useCollapsingNav() {
   const scrollY = ref(0)
 
-  useRafScroll(scrollTarget, (top) => {
+  useRafScroll((top) => {
     if (Math.abs(top - scrollY.value) >= 1) {
       scrollY.value = top
     }

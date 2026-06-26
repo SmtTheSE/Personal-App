@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { inject, ref, type Ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCollapsingNav } from '@/composables/useCollapsingNav'
 import { useUiStore } from '@/stores/ui'
@@ -15,11 +14,10 @@ const props = defineProps<{
   transparent?: boolean
 }>()
 
-const scrollRef = inject<Ref<HTMLElement | null>>('pageScrollRef', ref(null))
 const router = useRouter()
 const ui = useUiStore()
 
-const { isCollapsed, collapseProgress } = useCollapsingNav(scrollRef)
+const { isCollapsed, collapseProgress } = useCollapsingNav()
 
 function goBack() {
   router.back()

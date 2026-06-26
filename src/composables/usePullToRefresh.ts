@@ -1,12 +1,13 @@
-import { ref, type Ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 
 const PULL_THRESHOLD = 80
 const MAX_PULL = 120
 
-export function usePullToRefresh(
-  scrollTarget: Ref<HTMLElement | null>,
-  onRefresh: () => Promise<void>
-) {
+function pageScrollTop(): number {
+  return window.scrollY || document.documentElement.scrollTop || 0
+}
+
+export function usePullToRefresh(onRefresh: () => Promise<void>) {
   const isPulling = ref(false)
   const pullDistance = ref(0)
   const isRefreshing = ref(false)
@@ -14,8 +15,7 @@ export function usePullToRefresh(
   let tracking = false
 
   function onTouchStart(e: TouchEvent) {
-    const el = scrollTarget.value
-    if (!el || el.scrollTop > 0 || isRefreshing.value) return
+    if (pageScrollTop() > 0 || isRefreshing.value) return
     startY = e.touches[0].clientY
     tracking = true
     isPulling.value = false
@@ -24,8 +24,7 @@ export function usePullToRefresh(
 
   function onTouchMove(e: TouchEvent) {
     if (!tracking || isRefreshing.value) return
-    const el = scrollTarget.value
-    if (!el || el.scrollTop > 0) {
+    if (pageScrollTop() > 0) {
       isPulling.value = false
       pullDistance.value = 0
       return
@@ -58,23 +57,19 @@ export function usePullToRefresh(
     pullDistance.value = 0
   }
 
-  function attach() {
-    const el = scrollTarget.value
-    if (!el) return
-    el.addEventListener('touchstart', onTouchStart, { passive: true })
-    el.addEventListener('touchmove', onTouchMove, { passive: true })
-    el.addEventListener('touchend', onTouchEnd, { passive: true })
-    el.addEventListener('touchcancel', onTouchEnd, { passive: true })
-  }
+  onMounted(() => {
+    document.addEventListener('touchstart', onTouchStart, { passive: true })
+    document.addEventListener('touchmove', onTouchMove, { passive: true })
+    document.addEventListener('touchend', onTouchEnd, { passive: true })
+    document.addEventListener('touchcancel', onTouchEnd, { passive: true })
+  })
 
-  function detach() {
-    const el = scrollTarget.value
-    if (!el) return
-    el.removeEventListener('touchstart', onTouchStart)
-    el.removeEventListener('touchmove', onTouchMove)
-    el.removeEventListener('touchend', onTouchEnd)
-    el.removeEventListener('touchcancel', onTouchEnd)
-  }
+  onUnmounted(() => {
+    document.removeEventListener('touchstart', onTouchStart)
+    document.removeEventListener('touchmove', onTouchMove)
+    document.removeEventListener('touchend', onTouchEnd)
+    document.removeEventListener('touchcancel', onTouchEnd)
+  })
 
-  return { pullDistance, isRefreshing, isPulling, attach, detach }
+  return { pullDistance, isRefreshing, isPulling }
 }

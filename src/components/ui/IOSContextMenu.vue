@@ -15,16 +15,25 @@ const props = defineProps<{
 const open = ref(false)
 const position = ref({ x: 0, y: 0 })
 let longPressTimer: ReturnType<typeof setTimeout> | null = null
+let startY = 0
 
 function close() {
   open.value = false
 }
 
 function onPointerDown(e: PointerEvent) {
+  startY = e.clientY
   longPressTimer = setTimeout(() => {
     position.value = { x: e.clientX, y: e.clientY }
     open.value = true
   }, 500)
+}
+
+function onPointerMove(e: PointerEvent) {
+  if (longPressTimer && Math.abs(e.clientY - startY) > 8) {
+    clearTimeout(longPressTimer)
+    longPressTimer = null
+  }
 }
 
 function onPointerUp() {
@@ -49,6 +58,7 @@ onUnmounted(() => {
 <template>
   <div
     @pointerdown="onPointerDown"
+    @pointermove="onPointerMove"
     @pointerup="onPointerUp"
     @pointerleave="onPointerUp"
     @contextmenu.prevent

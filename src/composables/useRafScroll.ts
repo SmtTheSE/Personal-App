@@ -1,28 +1,42 @@
 import { onMounted, onUnmounted, type Ref } from 'vue'
 
+function readScrollTop(target?: HTMLElement | null): number {
+  if (target) return target.scrollTop
+  return window.scrollY || document.documentElement.scrollTop || 0
+}
+
 /** Run scroll handler at most once per animation frame — keeps mobile scroll smooth. */
 export function useRafScroll(
-  scrollTarget: Ref<HTMLElement | null>,
-  callback: (scrollTop: number) => void
+  callback: (scrollTop: number) => void,
+  scrollTarget?: Ref<HTMLElement | null>
 ) {
   let ticking = false
 
   function onScroll() {
-    if (ticking || !scrollTarget.value) return
+    if (ticking) return
     ticking = true
     requestAnimationFrame(() => {
       ticking = false
-      if (!scrollTarget.value) return
-      callback(scrollTarget.value.scrollTop)
+      callback(readScrollTop(scrollTarget?.value ?? null))
     })
   }
 
   onMounted(() => {
-    scrollTarget.value?.addEventListener('scroll', onScroll, { passive: true })
+    const el = scrollTarget?.value
+    if (el) {
+      el.addEventListener('scroll', onScroll, { passive: true })
+    } else {
+      window.addEventListener('scroll', onScroll, { passive: true })
+    }
   })
 
   onUnmounted(() => {
-    scrollTarget.value?.removeEventListener('scroll', onScroll)
+    const el = scrollTarget?.value
+    if (el) {
+      el.removeEventListener('scroll', onScroll)
+    } else {
+      window.removeEventListener('scroll', onScroll)
+    }
   })
 
   return { onScroll }

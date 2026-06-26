@@ -1,13 +1,13 @@
-import { ref, type Ref } from 'vue'
+import { ref } from 'vue'
 import { useRafScroll } from './useRafScroll'
 
 const SCROLL_DELTA_THRESHOLD = 12
 
-export function useScrollChrome(scrollTarget: Ref<HTMLElement | null>) {
+export function useScrollChrome() {
   const tabBarVisible = ref(true)
   let lastScrollY = 0
 
-  useRafScroll(scrollTarget, (current) => {
+  useRafScroll((current) => {
     const delta = current - lastScrollY
     let next = tabBarVisible.value
 
