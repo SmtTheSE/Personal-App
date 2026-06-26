@@ -12,6 +12,7 @@ import { useMilestonesStore } from '@/stores/milestones'
 import { useSpreadsheetsStore } from '@/stores/spreadsheets'
 import { useExamsStore } from '@/stores/exams'
 import { useIntegrationsStore } from '@/stores/integrations'
+import { useDataCleaningStore } from '@/stores/dataCleaning'
 import { useUiStore } from '@/stores/ui'
 import PageShell from '@/components/layout/PageShell.vue'
 import NavBar from '@/components/layout/NavBar.vue'
@@ -38,6 +39,7 @@ import {
   PhCalendar,
   PhBrain,
   PhRocketLaunch,
+  PhBroom,
 } from '@phosphor-icons/vue'
 
 const auth = useAuthStore()
@@ -51,6 +53,7 @@ const milestonesStore = useMilestonesStore()
 const spreadsheetsStore = useSpreadsheetsStore()
 const examsStore = useExamsStore()
 const integrationsStore = useIntegrationsStore()
+const dataCleaningStore = useDataCleaningStore()
 const ui = useUiStore()
 const router = useRouter()
 
@@ -76,6 +79,7 @@ async function handleRefresh() {
     spreadsheetsStore.fetchSpreadsheets(),
     examsStore.fetchExams(),
     integrationsStore.fetchStatuses().catch(() => {}),
+    Promise.resolve(dataCleaningStore.loadFromStorage()),
   ])
 }
 </script>
@@ -139,6 +143,25 @@ async function handleRefresh() {
         </div>
         <div v-if="spreadsheetsStore.sorted.length" class="flex items-center gap-1 text-system-orange">
           <PhLightning :size="16" weight="fill" />
+        </div>
+        <PhArrowRight :size="18" class="shrink-0 text-tertiary" />
+      </button>
+
+      <button
+        type="button"
+        class="surface-elevated flex w-full items-center gap-4 p-4 text-left press-scale"
+        :style="{ borderRadius: 'var(--radius-card)' }"
+        @click="router.push('/data-cleaning')"
+      >
+        <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-system-orange/15 text-system-orange">
+          <PhBroom :size="28" weight="fill" />
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="text-headline text-primary">Data Cleaning</p>
+          <p class="text-footnote text-tertiary">
+            CSV & Excel · column profiling, dedup, export
+            <span v-if="dataCleaningStore.sorted.length"> · {{ dataCleaningStore.sorted.length }} session(s)</span>
+          </p>
         </div>
         <PhArrowRight :size="18" class="shrink-0 text-tertiary" />
       </button>

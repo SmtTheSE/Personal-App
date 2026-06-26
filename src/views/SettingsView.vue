@@ -11,7 +11,7 @@ import IOSListGroup from '@/components/ui/IOSListGroup.vue'
 import IOSListItem from '@/components/ui/IOSListItem.vue'
 import IOSButton from '@/components/ui/IOSButton.vue'
 import IOSSwitch from '@/components/ui/IOSSwitch.vue'
-import { PhMoon, PhSun, PhSignOut, PhTarget, PhTable, PhGithubLogo, PhRocketLaunch } from '@phosphor-icons/vue'
+import { PhMoon, PhSun, PhSignOut, PhTarget, PhTable, PhGithubLogo, PhRocketLaunch, PhBroom } from '@phosphor-icons/vue'
 import { initialsFromString, gradientFromString } from '@/lib/color'
 
 const auth = useAuthStore()
@@ -125,6 +125,11 @@ onMounted(() => {
         <IOSListItem title="Sheet Automations" subtitle="Spreadsheets with formulas & auto-rules" @click="router.push('/sheets')">
           <template #icon>
             <PhTable :size="22" class="text-[var(--color-system-green)]" />
+          </template>
+        </IOSListItem>
+        <IOSListItem title="Data Cleaning" subtitle="CSV/Excel profiling, dedup & export" @click="router.push('/data-cleaning')">
+          <template #icon>
+            <PhBroom :size="22" class="text-[var(--color-system-orange)]" />
           </template>
         </IOSListItem>
         <IOSListItem title="Deployments" subtitle="GitHub repos & Vercel deploy analytics" @click="router.push('/deployments')">

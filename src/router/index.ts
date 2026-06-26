@@ -116,6 +116,18 @@ const router = createRouter({
           component: () => import('@/views/SpreadsheetEditorView.vue'),
           meta: { transition: 'slide-push' },
         },
+        {
+          path: 'data-cleaning',
+          name: 'data-cleaning',
+          component: () => import('@/views/DataCleaningHubView.vue'),
+          meta: { transition: 'slide-push' },
+        },
+        {
+          path: 'data-cleaning/:id',
+          name: 'data-cleaning-session',
+          component: () => import('@/views/DataCleaningSessionView.vue'),
+          meta: { transition: 'slide-push' },
+        },
       ],
     },
     {
