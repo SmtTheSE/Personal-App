@@ -133,7 +133,7 @@ export interface ProjectMilestone {
 export interface UserIntegration {
   id: string
   user_id: string
-  provider: 'github' | 'vercel' | 'google_calendar'
+  provider: 'github' | 'vercel' | 'google_calendar' | 'telegram'
   access_token: string
   refresh_token: string | null
   metadata: Record<string, unknown>

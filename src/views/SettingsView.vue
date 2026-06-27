@@ -5,6 +5,7 @@ import { useDark } from '@vueuse/core'
 import { useAuthStore } from '@/stores/auth'
 import { useIntegrationsStore } from '@/stores/integrations'
 import { useGoogleCalendarStore } from '@/stores/googleCalendar'
+import { useTelegramStore } from '@/stores/telegram'
 import { useUiStore } from '@/stores/ui'
 import { useAsyncAction } from '@/composables/useAsyncAction'
 import PageShell from '@/components/layout/PageShell.vue'
@@ -13,12 +14,13 @@ import IOSListGroup from '@/components/ui/IOSListGroup.vue'
 import IOSListItem from '@/components/ui/IOSListItem.vue'
 import IOSButton from '@/components/ui/IOSButton.vue'
 import IOSSwitch from '@/components/ui/IOSSwitch.vue'
-import { PhMoon, PhSun, PhSignOut, PhTarget, PhTable, PhGithubLogo, PhRocketLaunch, PhBroom, PhCalendar } from '@phosphor-icons/vue'
+import { PhMoon, PhSun, PhSignOut, PhTarget, PhTable, PhGithubLogo, PhRocketLaunch, PhBroom, PhCalendar, PhTelegramLogo } from '@phosphor-icons/vue'
 import { initialsFromString, gradientFromString } from '@/lib/color'
 
 const auth = useAuthStore()
 const integrations = useIntegrationsStore()
 const googleCalendar = useGoogleCalendarStore()
+const telegram = useTelegramStore()
 const ui = useUiStore()
 const router = useRouter()
 const route = useRoute()
@@ -95,6 +97,21 @@ async function saveVercelToken() {
   savingVercel.value = false
 }
 
+async function connectTelegram() {
+  await run(() => telegram.connect(), { successMessage: 'Open Telegram and tap Start' })
+}
+
+async function disconnectTelegram() {
+  await run(async () => {
+    await telegram.disconnect()
+    await integrations.fetchStatuses()
+  }, { successMessage: 'Telegram disconnected' })
+}
+
+function openTelegramLink() {
+  if (telegram.linkUrl) window.open(telegram.linkUrl, '_blank', 'noopener,noreferrer')
+}
+
 async function disconnectIntegration(provider: 'github' | 'vercel') {
   await run(() => integrations.disconnect(provider), { successMessage: 'Disconnected' })
 }
@@ -103,6 +120,7 @@ onMounted(async () => {
   await Promise.all([
     integrations.fetchStatuses().catch(() => {}),
     googleCalendar.loadStatus().catch(() => {}),
+    telegram.fetchStatus().catch(() => {}),
   ])
 
   const calendarStatus = route.query.calendar
@@ -291,6 +309,37 @@ onMounted(async () => {
           </IOSListItem>
           <IOSButton variant="plain" size="sm" class="text-system-red" @click="disconnectGoogleCalendar">
             Disconnect Google Calendar
+          </IOSButton>
+        </div>
+
+        <IOSListItem
+          title="Telegram"
+          :subtitle="telegram.connected ? `Linked — ${telegram.displayName ?? 'chat'}` : 'Quick capture: task & note from Telegram'"
+        >
+          <template #icon>
+            <PhTelegramLogo :size="22" class="text-[var(--color-system-blue)]" weight="fill" />
+          </template>
+          <template #trailing>
+            <div class="flex gap-2" @click.stop>
+              <IOSButton v-if="!telegram.connected" size="sm" :loading="telegram.connecting" @click="connectTelegram">
+                Connect
+              </IOSButton>
+              <IOSButton v-else size="sm" variant="bordered" @click="connectTelegram">
+                Re-link
+              </IOSButton>
+            </div>
+          </template>
+        </IOSListItem>
+
+        <div v-if="telegram.connected || telegram.linkUrl" class="space-y-2 px-4 py-2">
+          <p class="text-caption-1 text-tertiary">
+            Send <code class="text-footnote">task Buy milk tomorrow</code> or <code class="text-footnote">note LeetCode 347</code>
+          </p>
+          <IOSButton v-if="telegram.linkUrl" size="sm" variant="bordered" @click="openTelegramLink">
+            Open Telegram bot
+          </IOSButton>
+          <IOSButton v-if="telegram.connected" variant="plain" size="sm" class="text-system-red" @click="disconnectTelegram">
+            Disconnect Telegram
           </IOSButton>
         </div>
       </IOSListGroup>

@@ -52,7 +52,7 @@ export const useIntegrationsStore = defineStore('integrations', () => {
 
     if (error) throw error
 
-    const providers: IntegrationProvider[] = ['github', 'vercel', 'google_calendar']
+    const providers: IntegrationProvider[] = ['github', 'vercel', 'google_calendar', 'telegram']
     statuses.value = providers.map((provider) => {
       const row = data?.find((d) => d.provider === provider)
       return {

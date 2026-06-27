@@ -1,4 +1,4 @@
-export type IntegrationProvider = 'github' | 'vercel' | 'google_calendar'
+export type IntegrationProvider = 'github' | 'vercel' | 'google_calendar' | 'telegram'
 
 export interface IntegrationRecord {
   access_token: string

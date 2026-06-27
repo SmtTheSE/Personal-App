@@ -97,7 +97,35 @@ API routes run as Vercel serverless functions (`nexus/api/`). Local dev: use `ve
 
 Scopes: `calendar.events` (write) + `calendar.readonly` (busy import).
 
-## 7. Verify
+## 8. Telegram quick capture
+
+1. Run `supabase/migrations/v7_telegram.sql` (or tail of `schema.sql`) in Supabase SQL Editor.
+2. Create a bot with [@BotFather](https://t.me/BotFather) → `/newbot` → copy the **bot token**.
+3. Add Vercel env vars:
+
+| Key | Value |
+|-----|-------|
+| `TELEGRAM_BOT_TOKEN` | Bot token from BotFather |
+| `TELEGRAM_WEBHOOK_SECRET` | Random string (e.g. `openssl rand -hex 24`) |
+| `TELEGRAM_BOT_USERNAME` | Optional — bot username without `@` |
+
+4. Register the webhook (once per deploy URL):
+
+```bash
+curl -X POST "https://api.telegram.org/bot<TOKEN>/setWebhook" \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://YOUR-APP.vercel.app/api/telegram/webhook","secret_token":"YOUR_WEBHOOK_SECRET"}'
+```
+
+5. In Nexus **Settings → Integrations → Telegram → Connect** → open the bot in Telegram → tap **Start**.
+6. Message the bot:
+   - `task Buy milk tomorrow`
+   - `note LeetCode 347`
+   - `note Lecture recap | Key ideas from class`
+
+Aliases: `t` / `n`. Due hints: `today`, `tomorrow`, or `YYYY-MM-DD`.
+
+## 9. Verify
 
 - [ ] Email sign-up / sign-in works
 - [ ] GitHub OAuth redirects back to your Vercel site

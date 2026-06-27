@@ -351,3 +351,9 @@ alter table public.calendar_sync_mappings enable row level security;
 create policy "Users can read own calendar sync mappings"
   on public.calendar_sync_mappings for select
   using (auth.uid() = user_id);
+
+-- Telegram quick capture (v7)
+
+alter table public.user_integrations drop constraint if exists user_integrations_provider_check;
+alter table public.user_integrations add constraint user_integrations_provider_check
+  check (provider in ('github', 'vercel', 'google_calendar', 'telegram'));
