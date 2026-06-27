@@ -1,6 +1,7 @@
 export type ProjectStatus = 'active' | 'paused' | 'completed' | 'archived'
 export type TaskPriority = 'low' | 'medium' | 'high'
 export type TaskStatus = 'todo' | 'in_progress' | 'done'
+export type KanbanColumn = 'backlog' | 'todo' | 'in_progress' | 'review' | 'done'
 export type ResourceType = 'article' | 'paper' | 'tutorial' | 'video' | 'book' | 'tool' | 'other'
 export type ProblemDifficulty = 'easy' | 'medium' | 'hard'
 
@@ -47,6 +48,7 @@ export interface Task {
   description: string | null
   priority: TaskPriority
   status: TaskStatus
+  kanban_column?: KanbanColumn
   due_date: string | null
   project_id: string | null
   sort_order: number

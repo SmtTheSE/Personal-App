@@ -43,6 +43,8 @@ import {
   PhBrain,
   PhRocketLaunch,
   PhBroom,
+  PhSquaresFour,
+  PhCalendarBlank,
 } from '@phosphor-icons/vue'
 
 const auth = useAuthStore()
@@ -124,6 +126,42 @@ function openNextUp() {
           subtitle="tasks done"
         />
       </div>
+
+      <button
+        type="button"
+        class="surface-elevated flex w-full items-center gap-4 p-4 text-left press-scale"
+        :style="{ borderRadius: 'var(--radius-card)' }"
+        @click="router.push('/weekly-plan')"
+      >
+        <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-system-purple/15 text-system-purple">
+          <PhCalendarBlank :size="28" weight="fill" />
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="text-headline text-primary">This Week</p>
+          <p class="text-footnote text-tertiary">
+            Smart plan — exams, Google busy time, tasks, GitHub issues, {{ studyGoal }} min/day study goal
+          </p>
+        </div>
+        <PhArrowRight :size="18" class="shrink-0 text-tertiary" />
+      </button>
+
+      <button
+        type="button"
+        class="surface-elevated flex w-full items-center gap-4 p-4 text-left press-scale"
+        :style="{ borderRadius: 'var(--radius-card)' }"
+        @click="router.push('/kanban')"
+      >
+        <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-system-green/15 text-system-green">
+          <PhSquaresFour :size="28" weight="fill" />
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="text-headline text-primary">Dev Kanban</p>
+          <p class="text-footnote text-tertiary">
+            Backlog → Ready → In Progress → Review → Done
+          </p>
+        </div>
+        <PhArrowRight :size="18" class="shrink-0 text-tertiary" />
+      </button>
 
       <button
         type="button"

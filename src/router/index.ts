@@ -99,6 +99,18 @@ const router = createRouter({
           meta: { transition: 'slide-push' },
         },
         {
+          path: 'weekly-plan',
+          name: 'weekly-plan',
+          component: () => import('@/views/WeeklyPlanView.vue'),
+          meta: { transition: 'slide-push' },
+        },
+        {
+          path: 'kanban',
+          name: 'kanban',
+          component: () => import('@/views/KanbanView.vue'),
+          meta: { transition: 'slide-push' },
+        },
+        {
           path: 'github-issues',
           name: 'github-issues',
           component: () => import('@/views/GitHubIssuesView.vue'),

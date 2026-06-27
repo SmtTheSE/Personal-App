@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { format, parseISO, isToday, isPast, startOfDay } from 'date-fns'
 import { useTasksStore } from '@/stores/tasks'
 import { useHaptics } from '@/composables/useHaptics'
@@ -19,6 +20,7 @@ import type { Task, TaskPriority } from '@/types'
 import type { SwipeAction } from '@/composables/useSwipeGesture'
 
 const tasksStore = useTasksStore()
+const router = useRouter()
 const { trigger } = useHaptics()
 const { run } = useAsyncAction()
 
@@ -109,7 +111,10 @@ async function toggleTask(id: string) {
   <PageShell>
     <template #header>
       <NavBar title="Tasks" large>
-        <div class="flex justify-end px-4 pb-2">
+        <div class="flex items-center justify-end gap-2 px-4 pb-2">
+          <IOSButton size="sm" variant="bordered" @click="router.push('/kanban')">
+            Kanban
+          </IOSButton>
           <button
             type="button"
             class="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-system-blue)] text-white press-scale"

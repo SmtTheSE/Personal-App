@@ -3,7 +3,8 @@ import { ref, computed } from 'vue'
 import { isToday, isPast, parseISO, startOfDay } from 'date-fns'
 import { supabase } from '@/lib/supabase'
 import { enqueueCalendarSync } from '@/lib/calendar/syncClient'
-import type { Task, TaskPriority } from '@/types'
+import { kanbanColumnForStatus, statusForKanbanColumn } from '@/lib/kanban/columns'
+import type { Task, TaskPriority, KanbanColumn } from '@/types'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
 export const useTasksStore = defineStore('tasks', () => {
@@ -61,6 +62,24 @@ export const useTasksStore = defineStore('tasks', () => {
       }
     }
     return streak
+  })
+
+  const kanbanBoard = computed(() => {
+    const columns: Record<KanbanColumn, Task[]> = {
+      backlog: [],
+      todo: [],
+      in_progress: [],
+      review: [],
+      done: [],
+    }
+    for (const task of tasks.value) {
+      const column = kanbanColumnForStatus(task.status, task.kanban_column)
+      columns[column].push(task)
+    }
+    for (const key of Object.keys(columns) as KanbanColumn[]) {
+      columns[key].sort((a, b) => a.sort_order - b.sort_order)
+    }
+    return columns
   })
 
   async function fetchTasks() {
@@ -136,6 +155,7 @@ export const useTasksStore = defineStore('tasks', () => {
         description: task.description ?? null,
         priority: task.priority ?? 'medium',
         status: 'todo',
+        kanban_column: 'todo',
         due_date: task.due_date ?? null,
         project_id: task.project_id ?? null,
         sort_order: maxOrder + 1,
@@ -173,7 +193,20 @@ export const useTasksStore = defineStore('tasks', () => {
     const isDone = task.status !== 'done'
     return updateTask(id, {
       status: isDone ? 'done' : 'todo',
+      kanban_column: isDone ? 'done' : 'todo',
       completed_at: isDone ? new Date().toISOString() : null,
+    })
+  }
+
+  async function moveToKanbanColumn(id: string, column: KanbanColumn) {
+    const task = tasks.value.find((t) => t.id === id)
+    if (!task) return
+
+    const status = statusForKanbanColumn(column)
+    return updateTask(id, {
+      kanban_column: column,
+      status,
+      completed_at: column === 'done' ? task.completed_at ?? new Date().toISOString() : null,
     })
   }
 
@@ -201,12 +234,14 @@ export const useTasksStore = defineStore('tasks', () => {
     completedToday,
     upcomingDeadlines,
     studyStreak,
+    kanbanBoard,
     fetchTasks,
     subscribeToRealtime,
     unsubscribeRealtime,
     createTask,
     updateTask,
     toggleComplete,
+    moveToKanbanColumn,
     deleteTask,
     reorderTasks,
   }

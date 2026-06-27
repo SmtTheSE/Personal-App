@@ -14,7 +14,7 @@ import IOSListGroup from '@/components/ui/IOSListGroup.vue'
 import IOSListItem from '@/components/ui/IOSListItem.vue'
 import IOSButton from '@/components/ui/IOSButton.vue'
 import IOSSwitch from '@/components/ui/IOSSwitch.vue'
-import { PhMoon, PhSun, PhSignOut, PhTarget, PhTable, PhGithubLogo, PhRocketLaunch, PhBroom, PhCalendar, PhTelegramLogo } from '@phosphor-icons/vue'
+import { PhMoon, PhSun, PhSignOut, PhTarget, PhTable, PhGithubLogo, PhRocketLaunch, PhBroom, PhCalendar, PhTelegramLogo, PhSquaresFour } from '@phosphor-icons/vue'
 import { initialsFromString, gradientFromString } from '@/lib/color'
 
 const auth = useAuthStore()
@@ -180,6 +180,20 @@ onMounted(async () => {
       </div>
 
       <IOSListGroup title="Data">
+        <IOSListItem
+          title="This Week"
+          subtitle="Smart weekly plan with focus block suggestions"
+          @click="router.push('/weekly-plan')"
+        >
+          <template #icon>
+            <PhCalendar :size="22" class="text-[var(--color-system-purple)]" weight="fill" />
+          </template>
+        </IOSListItem>
+        <IOSListItem title="Dev Kanban" subtitle="SDLC board — backlog to done" @click="router.push('/kanban')">
+          <template #icon>
+            <PhSquaresFour :size="22" class="text-[var(--color-system-green)]" weight="fill" />
+          </template>
+        </IOSListItem>
         <IOSListItem title="Sheet Automations" subtitle="Spreadsheets with formulas & auto-rules" @click="router.push('/sheets')">
           <template #icon>
             <PhTable :size="22" class="text-[var(--color-system-green)]" />
