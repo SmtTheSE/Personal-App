@@ -71,11 +71,12 @@ export async function upsertIntegration(
   }
 ) {
   const { supabaseUrl, serviceKey } = supabaseConfig()
-  const res = await fetch(`${supabaseUrl}/rest/v1/user_integrations`, {
+  const url = `${supabaseUrl}/rest/v1/user_integrations?on_conflict=user_id,provider`
+  const res = await fetch(url, {
     method: 'POST',
     headers: {
       ...restHeaders(serviceKey),
-      Prefer: 'resolution=merge-duplicates',
+      Prefer: 'resolution=merge-duplicates,return=minimal',
     },
     body: JSON.stringify({
       user_id: userId,

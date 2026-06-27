@@ -1,4 +1,4 @@
-import { upsertIntegration, serviceFetch } from '../integrations'
+import { getIntegration, upsertIntegration, serviceFetch } from '../integrations'
 
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 const CODE_LENGTH = 8
@@ -12,16 +12,26 @@ export function generateLinkCode(): string {
 export async function createTelegramLink(userId: string) {
   const link_code = generateLinkCode()
   const link_expires = new Date(Date.now() + CODE_TTL_MS).toISOString()
+  const metadata = {
+    link_code,
+    link_expires,
+    linked: false,
+  }
 
-  await upsertIntegration(userId, 'telegram', {
-    access_token: 'pending',
-    refresh_token: null,
-    metadata: {
-      link_code,
-      link_expires,
-      linked: false,
-    },
-  })
+  const existing = await getIntegration(userId, 'telegram')
+  if (existing?.access_token && existing.access_token !== 'pending') {
+    await upsertIntegration(userId, 'telegram', {
+      access_token: existing.access_token,
+      refresh_token: existing.refresh_token,
+      metadata: { ...(existing.metadata ?? {}), ...metadata },
+    })
+  } else {
+    await upsertIntegration(userId, 'telegram', {
+      access_token: 'pending',
+      refresh_token: null,
+      metadata,
+    })
+  }
 
   return { link_code, link_expires }
 }
