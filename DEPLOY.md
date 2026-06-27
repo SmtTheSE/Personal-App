@@ -125,7 +125,16 @@ curl -X POST "https://api.telegram.org/bot<TOKEN>/setWebhook" \
 
 Aliases: `t` / `n`. Due hints: `today`, `tomorrow`, or `YYYY-MM-DD`.
 
-## 9. Verify
+## 9. GitHub Issues → Tasks
+
+1. Run `supabase/migrations/v8_github_issues.sql` (or tail of `schema.sql`) in Supabase SQL Editor.
+2. Connect **GitHub** in Settings (sign in with GitHub or reconnect for `repo` scope).
+3. Open **GitHub Issues** (Settings → Data, or Integrations → Sync GitHub Issues).
+4. Enable sync, select repositories, tap **Sync now**.
+
+Synced tasks store a mapping in `github_issue_sync_mappings` for idempotent updates. Labels map to priority; milestone `due_on` becomes task `due_date`. Closed issues can mark linked tasks done.
+
+## 10. Verify
 
 - [ ] Email sign-up / sign-in works
 - [ ] GitHub OAuth redirects back to your Vercel site

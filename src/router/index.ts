@@ -99,6 +99,12 @@ const router = createRouter({
           meta: { transition: 'slide-push' },
         },
         {
+          path: 'github-issues',
+          name: 'github-issues',
+          component: () => import('@/views/GitHubIssuesView.vue'),
+          meta: { transition: 'slide-push' },
+        },
+        {
           path: 'interview',
           name: 'interview',
           component: () => import('@/views/InterviewView.vue'),

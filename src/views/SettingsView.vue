@@ -196,6 +196,15 @@ onMounted(async () => {
           </template>
         </IOSListItem>
         <IOSListItem
+          title="GitHub Issues"
+          :subtitle="integrations.githubConnected ? 'Sync open issues into tasks' : 'Connect GitHub first'"
+          @click="router.push('/github-issues')"
+        >
+          <template #icon>
+            <PhGithubLogo :size="22" class="text-primary" weight="fill" />
+          </template>
+        </IOSListItem>
+        <IOSListItem
           title="My Schedule"
           :subtitle="googleCalendar.connected ? 'Full calendar in Nexus — today + 2 weeks' : 'Connect to see Google events here'"
           @click="router.push('/google-calendar')"
@@ -226,6 +235,9 @@ onMounted(async () => {
           </template>
         </IOSListItem>
         <div v-if="integrations.githubConnected" class="px-4 py-2">
+          <IOSButton variant="plain" size="sm" @click="router.push('/github-issues')">
+            Sync GitHub Issues → Tasks
+          </IOSButton>
           <IOSButton variant="plain" size="sm" class="text-system-red" @click="disconnectIntegration('github')">
             Disconnect GitHub token
           </IOSButton>
