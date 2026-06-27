@@ -177,6 +177,15 @@ onMounted(async () => {
             <PhRocketLaunch :size="22" class="text-[var(--color-system-blue)]" />
           </template>
         </IOSListItem>
+        <IOSListItem
+          title="My Schedule"
+          :subtitle="googleCalendar.connected ? 'Full calendar in Nexus — today + 2 weeks' : 'Connect to see Google events here'"
+          @click="router.push('/google-calendar')"
+        >
+          <template #icon>
+            <PhCalendar :size="22" class="text-[var(--color-system-red)]" weight="fill" />
+          </template>
+        </IOSListItem>
       </IOSListGroup>
 
       <IOSListGroup title="Integrations">
@@ -238,6 +247,7 @@ onMounted(async () => {
         <IOSListItem
           title="Google Calendar"
           :subtitle="googleCalendar.connected ? `Connected as ${googleCalendar.email ?? 'Google account'}` : 'Sync exams & task due dates to Google Calendar'"
+          @click="googleCalendar.connected && router.push('/google-calendar')"
         >
           <template #icon>
             <PhCalendar :size="22" class="text-[var(--color-system-red)]" weight="fill" />

@@ -2,7 +2,11 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { fetchBusyBlocks, requestFullCalendarSync } from '@/lib/calendar/syncClient'
-import type { CalendarBusyBlock, GoogleCalendarSettings } from '@/types/calendar'
+import type {
+  CalendarBusyBlock,
+  CalendarDashboard,
+  GoogleCalendarSettings,
+} from '@/types/calendar'
 
 async function authHeader(): Promise<Record<string, string>> {
   const { data: { session } } = await supabase.auth.getSession()
@@ -33,8 +37,10 @@ export const useGoogleCalendarStore = defineStore('googleCalendar', () => {
     email: null,
     token_expires_at: null,
   })
-  const busyBlocks = ref<CalendarBusyBlock[]>([])
+  const googleEvents = ref<CalendarBusyBlock[]>([])
+  const dashboard = ref<CalendarDashboard | null>(null)
   const loading = ref(false)
+  const dashboardLoading = ref(false)
   const syncing = ref(false)
 
   const email = computed(() => settings.value.email ?? null)
@@ -73,7 +79,8 @@ export const useGoogleCalendarStore = defineStore('googleCalendar', () => {
       throw new Error((body as { error?: string }).error ?? 'Disconnect failed')
     }
     connected.value = false
-    busyBlocks.value = []
+    googleEvents.value = []
+    dashboard.value = null
     settings.value = {
       sync_tasks: true,
       sync_exams: true,
@@ -100,44 +107,83 @@ export const useGoogleCalendarStore = defineStore('googleCalendar', () => {
     }
   }
 
+  async function fetchDashboard() {
+    dashboardLoading.value = true
+    try {
+      const headers = await authHeader()
+      const res = await fetch('/api/google/calendar/dashboard', { headers })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error((body as { error?: string }).error ?? 'Dashboard failed')
+      }
+      dashboard.value = body as CalendarDashboard
+      connected.value = dashboard.value.connected
+      if (dashboard.value.connected) {
+        settings.value = {
+          calendar_id: dashboard.value.calendar_id,
+          sync_tasks: dashboard.value.sync_tasks,
+          sync_exams: dashboard.value.sync_exams,
+          email: dashboard.value.email,
+          token_expires_at: settings.value.token_expires_at,
+        }
+      }
+      return dashboard.value
+    } finally {
+      dashboardLoading.value = false
+    }
+  }
+
   async function syncNow() {
     syncing.value = true
     try {
-      return await requestFullCalendarSync()
+      const result = await requestFullCalendarSync()
+      await fetchDashboard().catch(() => {})
+      return result
     } finally {
       syncing.value = false
     }
   }
 
-  async function loadBusyBlocks(timeMin: string, timeMax: string) {
+  async function loadGoogleEvents(timeMin: string, timeMax: string) {
     if (!connected.value) {
-      busyBlocks.value = []
+      googleEvents.value = []
       return []
     }
     loading.value = true
     try {
-      busyBlocks.value = await fetchBusyBlocks(timeMin, timeMax)
-      return busyBlocks.value
+      googleEvents.value = await fetchBusyBlocks(timeMin, timeMax)
+      return googleEvents.value
     } catch {
-      busyBlocks.value = []
+      googleEvents.value = []
       return []
     } finally {
       loading.value = false
     }
   }
 
+  /** @deprecated use loadGoogleEvents */
+  async function loadBusyBlocks(timeMin: string, timeMax: string) {
+    return loadGoogleEvents(timeMin, timeMax)
+  }
+
   return {
     connected,
     settings,
     email,
-    busyBlocks,
+    googleEvents,
+    /** @deprecated use googleEvents */
+    busyBlocks: googleEvents,
+    dashboard,
     loading,
+    dashboardLoading,
     syncing,
     loadStatus,
     connect,
     disconnect,
     updateSettings,
     syncNow,
+    fetchDashboard,
+    loadGoogleEvents,
     loadBusyBlocks,
   }
 })

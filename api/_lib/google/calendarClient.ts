@@ -131,24 +131,37 @@ interface GoogleEventsListResponse {
   items?: Array<{
     id: string
     summary?: string
+    location?: string
+    htmlLink?: string
     start?: { date?: string; dateTime?: string }
     end?: { date?: string; dateTime?: string }
     extendedProperties?: { private?: Record<string, string> }
   }>
 }
 
-export async function listGoogleBusyEvents(
+export interface GoogleCalendarListedEvent {
+  id: string
+  summary: string
+  location: string | null
+  htmlLink: string | null
+  start: string
+  end: string
+  allDay: boolean
+}
+
+export async function listGoogleEvents(
   accessToken: string,
   calendarId: string,
   timeMin: string,
-  timeMax: string
+  timeMax: string,
+  options?: { excludeNexus?: boolean }
 ) {
   const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`)
   url.searchParams.set('timeMin', timeMin)
   url.searchParams.set('timeMax', timeMax)
   url.searchParams.set('singleEvents', 'true')
   url.searchParams.set('orderBy', 'startTime')
-  url.searchParams.set('maxResults', '100')
+  url.searchParams.set('maxResults', '250')
 
   const res = await fetch(url.toString(), {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -160,7 +173,29 @@ export async function listGoogleBusyEvents(
   }
 
   const body = (await res.json()) as GoogleEventsListResponse
-  return (body.items ?? []).filter((item) => !item.extendedProperties?.private?.nexus_entity_id)
+  const items = body.items ?? []
+  const filtered = options?.excludeNexus !== false
+    ? items.filter((item) => !item.extendedProperties?.private?.nexus_entity_id)
+    : items
+
+  return filtered.map((item) => ({
+    id: item.id,
+    summary: item.summary ?? 'Event',
+    location: item.location ?? null,
+    htmlLink: item.htmlLink ?? null,
+    start: item.start?.dateTime ?? item.start?.date ?? timeMin,
+    end: item.end?.dateTime ?? item.end?.date ?? timeMax,
+    allDay: !!item.start?.date && !item.start?.dateTime,
+  })) satisfies GoogleCalendarListedEvent[]
+}
+
+export async function listGoogleBusyEvents(
+  accessToken: string,
+  calendarId: string,
+  timeMin: string,
+  timeMax: string
+) {
+  return listGoogleEvents(accessToken, calendarId, timeMin, timeMax, { excludeNexus: true })
 }
 
 export function mergeGoogleSettings(

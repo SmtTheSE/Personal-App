@@ -93,6 +93,12 @@ const router = createRouter({
           meta: { transition: 'slide-push' },
         },
         {
+          path: 'google-calendar',
+          name: 'google-calendar',
+          component: () => import('@/views/GoogleCalendarView.vue'),
+          meta: { transition: 'slide-push' },
+        },
+        {
           path: 'interview',
           name: 'interview',
           component: () => import('@/views/InterviewView.vue'),

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted, onMounted } from 'vue'
-import { format, parseISO, startOfDay, endOfDay } from 'date-fns'
 import { useRouter } from 'vue-router'
 import { useFocusTimer } from '@/composables/useFocusTimer'
+import { useScheduleHorizon } from '@/composables/useCalendarWeek'
 import { useAnalyticsStore } from '@/stores/analytics'
 import { useProjectsStore } from '@/stores/projects'
 import { useUiStore } from '@/stores/ui'
@@ -15,10 +15,13 @@ import IOSTextField from '@/components/ui/IOSTextField.vue'
 import IOSListGroup from '@/components/ui/IOSListGroup.vue'
 import IOSListItem from '@/components/ui/IOSListItem.vue'
 import IOSSwipeRow from '@/components/ui/IOSSwipeRow.vue'
+import DayAgenda from '@/components/calendar/DayAgenda.vue'
+import NextUpCard from '@/components/calendar/NextUpCard.vue'
 import { PhPlay, PhPause, PhArrowCounterClockwise, PhChartLine, PhTrash } from '@phosphor-icons/vue'
 import type { TimerPhase } from '@/composables/useFocusTimer'
 import type { SwipeAction } from '@/composables/useSwipeGesture'
 import { useHaptics } from '@/composables/useHaptics'
+import { format, parseISO } from 'date-fns'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -26,6 +29,8 @@ const ui = useUiStore()
 const projectsStore = useProjectsStore()
 const analyticsStore = useAnalyticsStore()
 const googleCalendar = useGoogleCalendarStore()
+const schedule = useScheduleHorizon(1)
+const today = new Date()
 const { run } = useAsyncAction()
 const { trigger } = useHaptics()
 
@@ -49,19 +54,18 @@ const loggedOnPause = ref(false)
 
 const recentSessions = computed(() => analyticsStore.todayFocusSessions)
 
-const todayBusyBlocks = computed(() => googleCalendar.busyBlocks)
-
-function formatBlockTime(iso: string) {
-  if (iso.length <= 10) return 'All day'
-  return format(parseISO(iso), 'h:mm a')
+function openNextUp() {
+  const event = schedule.nextUpEvent.value
+  if (!event) return
+  if (event.externalUrl) {
+    window.open(event.externalUrl, '_blank', 'noopener,noreferrer')
+    return
+  }
+  if (event.path) router.push(event.path)
 }
 
 onMounted(async () => {
-  await googleCalendar.loadStatus().catch(() => {})
-  if (googleCalendar.connected) {
-    const now = new Date()
-    await googleCalendar.loadBusyBlocks(startOfDay(now).toISOString(), endOfDay(now).toISOString())
-  }
+  await schedule.refresh()
 })
 
 async function logCurrentSession() {
@@ -271,17 +275,14 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <section v-if="todayBusyBlocks.length" class="mt-8 w-full max-w-sm">
-        <h2 class="text-headline mb-2 px-1 text-primary">Calendar busy today</h2>
-        <IOSListGroup :inset="false">
-          <IOSListItem
-            v-for="block in todayBusyBlocks"
-            :key="block.id"
-            :title="block.title"
-            :subtitle="`${formatBlockTime(block.start)} – ${formatBlockTime(block.end)}`"
-          />
-        </IOSListGroup>
-        <p class="mt-2 px-1 text-caption-2 text-tertiary">From Google Calendar — plan focus around these blocks</p>
+      <NextUpCard
+        v-if="schedule.nextUpEvent.value && googleCalendar.connected"
+        :event="schedule.nextUpEvent.value"
+        @open="openNextUp"
+      />
+
+      <section v-if="googleCalendar.connected && schedule.todayEvents.value.length" class="w-full max-w-sm px-4">
+        <DayAgenda :events="schedule.todayEvents.value" :day="today" show-google-badge />
       </section>
 
       <section v-if="recentSessions.length" class="mt-8 w-full max-w-sm">

@@ -1,22 +1,28 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { isSameDay } from 'date-fns'
 import { useRouter } from 'vue-router'
 import { useCalendarWeek } from '@/composables/useCalendarWeek'
 import { useExamsStore } from '@/stores/exams'
+import { useTasksStore } from '@/stores/tasks'
+import { useGoogleCalendarStore } from '@/stores/googleCalendar'
 import { useAsyncAction } from '@/composables/useAsyncAction'
 import PageShell from '@/components/layout/PageShell.vue'
 import NavBar from '@/components/layout/NavBar.vue'
 import WeekStrip from '@/components/calendar/WeekStrip.vue'
 import DayAgenda from '@/components/calendar/DayAgenda.vue'
+import NextUpCard from '@/components/calendar/NextUpCard.vue'
 import IOSSheet from '@/components/ui/IOSSheet.vue'
 import IOSTextField from '@/components/ui/IOSTextField.vue'
 import IOSButton from '@/components/ui/IOSButton.vue'
 import IOSChip from '@/components/ui/IOSChip.vue'
-import { PhPlus } from '@phosphor-icons/vue'
+import { PhPlus, PhCalendar } from '@phosphor-icons/vue'
 import type { ExamColor } from '@/types'
 
 const router = useRouter()
 const examsStore = useExamsStore()
+const tasksStore = useTasksStore()
+const googleCalendar = useGoogleCalendarStore()
 const { run } = useAsyncAction()
 
 const cal = useCalendarWeek()
@@ -30,9 +36,31 @@ const color = ref<ExamColor>('blue')
 
 const colors: ExamColor[] = ['blue', 'purple', 'orange', 'red', 'green']
 
-async function handleRefresh() {
-  await examsStore.fetchExams()
+const showNextUp = computed(
+  () => cal.nextUpEvent.value && isSameDay(cal.selectedDay.value, new Date())
+)
+
+function openNextUp() {
+  const event = cal.nextUpEvent.value
+  if (!event) return
+  if (event.externalUrl) {
+    window.open(event.externalUrl, '_blank', 'noopener,noreferrer')
+    return
+  }
+  if (event.path) router.push(event.path)
 }
+
+async function handleRefresh() {
+  await Promise.all([
+    tasksStore.fetchTasks(),
+    examsStore.fetchExams(),
+    cal.refreshGoogleEvents(),
+  ])
+}
+
+onMounted(() => {
+  void googleCalendar.loadStatus().then(() => cal.refreshGoogleEvents())
+})
 
 async function addExam() {
   if (!title.value.trim() || !examAt.value) return
@@ -71,7 +99,16 @@ async function addExam() {
           @next="cal.nextWeek"
           @today="cal.goToday"
         />
-        <div class="flex justify-end px-4 pb-2">
+        <div class="flex justify-end gap-2 px-4 pb-2">
+          <button
+            type="button"
+            class="flex h-11 items-center gap-2 rounded-full px-4 text-caption-1 font-medium press-scale"
+            :class="googleCalendar.connected ? 'fill-tertiary text-system-blue' : 'fill-tertiary text-tertiary'"
+            @click="router.push('/google-calendar')"
+          >
+            <PhCalendar :size="18" weight="fill" />
+            {{ googleCalendar.connected ? 'Full schedule' : 'Connect Google' }}
+          </button>
           <button
             type="button"
             class="flex h-11 w-11 items-center justify-center rounded-full bg-system-blue text-white press-scale"
@@ -84,10 +121,17 @@ async function addExam() {
       </NavBar>
     </template>
 
+    <NextUpCard
+      v-if="showNextUp"
+      :event="cal.nextUpEvent.value!"
+      @open="openNextUp"
+    />
+
     <div class="py-4">
       <DayAgenda
         :events="cal.selectedDayEvents.value"
         :day="cal.selectedDay.value"
+        show-google-badge
       />
     </div>
 

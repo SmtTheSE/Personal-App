@@ -12,6 +12,8 @@ import { useMilestonesStore } from '@/stores/milestones'
 import { useSpreadsheetsStore } from '@/stores/spreadsheets'
 import { useExamsStore } from '@/stores/exams'
 import { useIntegrationsStore } from '@/stores/integrations'
+import { useGoogleCalendarStore } from '@/stores/googleCalendar'
+import { useScheduleHorizon } from '@/composables/useCalendarWeek'
 import { useDataCleaningStore } from '@/stores/dataCleaning'
 import { useUiStore } from '@/stores/ui'
 import PageShell from '@/components/layout/PageShell.vue'
@@ -22,6 +24,7 @@ import IOSListItem from '@/components/ui/IOSListItem.vue'
 import WidgetMetric from '@/components/ui/WidgetMetric.vue'
 import DeadlineStrip from '@/components/ui/DeadlineStrip.vue'
 import ExamCountdownCard from '@/components/calendar/ExamCountdownCard.vue'
+import NextUpCard from '@/components/calendar/NextUpCard.vue'
 import IOSRingProgress from '@/components/ui/IOSRingProgress.vue'
 import {
   PhFlame,
@@ -53,6 +56,8 @@ const milestonesStore = useMilestonesStore()
 const spreadsheetsStore = useSpreadsheetsStore()
 const examsStore = useExamsStore()
 const integrationsStore = useIntegrationsStore()
+const googleCalendarStore = useGoogleCalendarStore()
+const todaySchedule = useScheduleHorizon(1)
 const dataCleaningStore = useDataCleaningStore()
 const ui = useUiStore()
 const router = useRouter()
@@ -79,8 +84,20 @@ async function handleRefresh() {
     spreadsheetsStore.fetchSpreadsheets(),
     examsStore.fetchExams(),
     integrationsStore.fetchStatuses().catch(() => {}),
+    googleCalendarStore.loadStatus().catch(() => {}),
+    todaySchedule.refresh().catch(() => {}),
     Promise.resolve(dataCleaningStore.loadFromStorage()),
   ])
+}
+
+function openNextUp() {
+  const event = todaySchedule.nextUpEvent.value
+  if (!event) return
+  if (event.externalUrl) {
+    window.open(event.externalUrl, '_blank', 'noopener,noreferrer')
+    return
+  }
+  if (event.path) router.push(event.path)
 }
 </script>
 
@@ -188,6 +205,35 @@ async function handleRefresh() {
         </div>
         <PhArrowRight :size="18" class="shrink-0 text-tertiary" />
       </button>
+
+      <button
+        type="button"
+        class="surface-elevated flex w-full items-center gap-4 p-4 text-left press-scale"
+        :style="{ borderRadius: 'var(--radius-card)' }"
+        @click="router.push('/google-calendar')"
+      >
+        <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-system-red/15 text-system-red">
+          <PhCalendar :size="28" weight="fill" />
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="text-headline text-primary">My Schedule</p>
+          <p class="text-footnote text-tertiary">
+            <template v-if="googleCalendarStore.connected">
+              Today + 2 weeks · Google events included
+            </template>
+            <template v-else>
+              Connect Google to see your full calendar in Nexus
+            </template>
+          </p>
+        </div>
+        <PhArrowRight :size="18" class="shrink-0 text-tertiary" />
+      </button>
+
+      <NextUpCard
+        v-if="todaySchedule.nextUpEvent.value"
+        :event="todaySchedule.nextUpEvent.value"
+        @open="openNextUp"
+      />
 
       <section v-if="examsStore.nextExam">
         <div class="mb-2 flex items-center justify-between px-1">
