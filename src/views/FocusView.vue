@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, watch, onUnmounted } from 'vue'
-import { format, parseISO } from 'date-fns'
+import { ref, computed, watch, onUnmounted, onMounted } from 'vue'
+import { format, parseISO, startOfDay, endOfDay } from 'date-fns'
 import { useRouter } from 'vue-router'
 import { useFocusTimer } from '@/composables/useFocusTimer'
 import { useAnalyticsStore } from '@/stores/analytics'
 import { useProjectsStore } from '@/stores/projects'
 import { useUiStore } from '@/stores/ui'
+import { useGoogleCalendarStore } from '@/stores/googleCalendar'
 import { useAsyncAction } from '@/composables/useAsyncAction'
 import { useAuthStore } from '@/stores/auth'
 import PageShell from '@/components/layout/PageShell.vue'
@@ -24,6 +25,7 @@ const auth = useAuthStore()
 const ui = useUiStore()
 const projectsStore = useProjectsStore()
 const analyticsStore = useAnalyticsStore()
+const googleCalendar = useGoogleCalendarStore()
 const { run } = useAsyncAction()
 const { trigger } = useHaptics()
 
@@ -46,6 +48,21 @@ const phases: { id: TimerPhase; label: string; mins: number }[] = [
 const loggedOnPause = ref(false)
 
 const recentSessions = computed(() => analyticsStore.todayFocusSessions)
+
+const todayBusyBlocks = computed(() => googleCalendar.busyBlocks)
+
+function formatBlockTime(iso: string) {
+  if (iso.length <= 10) return 'All day'
+  return format(parseISO(iso), 'h:mm a')
+}
+
+onMounted(async () => {
+  await googleCalendar.loadStatus().catch(() => {})
+  if (googleCalendar.connected) {
+    const now = new Date()
+    await googleCalendar.loadBusyBlocks(startOfDay(now).toISOString(), endOfDay(now).toISOString())
+  }
+})
 
 async function logCurrentSession() {
   const mins = timer.getElapsedMinutes()
@@ -253,6 +270,19 @@ onUnmounted(() => {
           />
         </div>
       </div>
+
+      <section v-if="todayBusyBlocks.length" class="mt-8 w-full max-w-sm">
+        <h2 class="text-headline mb-2 px-1 text-primary">Calendar busy today</h2>
+        <IOSListGroup :inset="false">
+          <IOSListItem
+            v-for="block in todayBusyBlocks"
+            :key="block.id"
+            :title="block.title"
+            :subtitle="`${formatBlockTime(block.start)} – ${formatBlockTime(block.end)}`"
+          />
+        </IOSListGroup>
+        <p class="mt-2 px-1 text-caption-2 text-tertiary">From Google Calendar — plan focus around these blocks</p>
+      </section>
 
       <section v-if="recentSessions.length" class="mt-8 w-full max-w-sm">
         <h2 class="text-headline mb-2 px-1 text-primary">Today's sessions</h2>

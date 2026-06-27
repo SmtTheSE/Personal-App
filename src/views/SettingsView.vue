@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useDark } from '@vueuse/core'
 import { useAuthStore } from '@/stores/auth'
 import { useIntegrationsStore } from '@/stores/integrations'
+import { useGoogleCalendarStore } from '@/stores/googleCalendar'
+import { useUiStore } from '@/stores/ui'
 import { useAsyncAction } from '@/composables/useAsyncAction'
 import PageShell from '@/components/layout/PageShell.vue'
 import NavBar from '@/components/layout/NavBar.vue'
@@ -11,12 +13,15 @@ import IOSListGroup from '@/components/ui/IOSListGroup.vue'
 import IOSListItem from '@/components/ui/IOSListItem.vue'
 import IOSButton from '@/components/ui/IOSButton.vue'
 import IOSSwitch from '@/components/ui/IOSSwitch.vue'
-import { PhMoon, PhSun, PhSignOut, PhTarget, PhTable, PhGithubLogo, PhRocketLaunch, PhBroom } from '@phosphor-icons/vue'
+import { PhMoon, PhSun, PhSignOut, PhTarget, PhTable, PhGithubLogo, PhRocketLaunch, PhBroom, PhCalendar } from '@phosphor-icons/vue'
 import { initialsFromString, gradientFromString } from '@/lib/color'
 
 const auth = useAuthStore()
 const integrations = useIntegrationsStore()
+const googleCalendar = useGoogleCalendarStore()
+const ui = useUiStore()
 const router = useRouter()
+const route = useRoute()
 const isDark = useDark()
 const { run } = useAsyncAction()
 
@@ -25,6 +30,28 @@ const studyGoal = ref(String(auth.profile?.study_goal_mins ?? 120))
 const saving = ref(false)
 const vercelToken = ref('')
 const savingVercel = ref(false)
+const savingCalendarSettings = ref(false)
+
+async function connectGoogleCalendar() {
+  await run(() => googleCalendar.connect())
+}
+
+async function disconnectGoogleCalendar() {
+  await run(async () => {
+    await googleCalendar.disconnect()
+    await integrations.fetchStatuses()
+  }, { successMessage: 'Google Calendar disconnected' })
+}
+
+async function syncGoogleCalendarNow() {
+  await run(() => googleCalendar.syncNow(), { successMessage: 'Calendar synced' })
+}
+
+async function updateCalendarToggle(key: 'sync_tasks' | 'sync_exams', value: boolean) {
+  savingCalendarSettings.value = true
+  await run(() => googleCalendar.updateSettings({ [key]: value }), { successMessage: 'Calendar settings saved' })
+  savingCalendarSettings.value = false
+}
 
 watch(
   () => auth.profile,
@@ -72,8 +99,21 @@ async function disconnectIntegration(provider: 'github' | 'vercel') {
   await run(() => integrations.disconnect(provider), { successMessage: 'Disconnected' })
 }
 
-onMounted(() => {
-  integrations.fetchStatuses().catch(() => {})
+onMounted(async () => {
+  await Promise.all([
+    integrations.fetchStatuses().catch(() => {}),
+    googleCalendar.loadStatus().catch(() => {}),
+  ])
+
+  const calendarStatus = route.query.calendar
+  if (calendarStatus === 'connected') {
+    ui.showToast('Google Calendar connected', 'success')
+    router.replace({ query: {} })
+  } else if (calendarStatus === 'error') {
+    const message = typeof route.query.message === 'string' ? route.query.message : 'Connection failed'
+    ui.showToast(message, 'error')
+    router.replace({ query: {} })
+  }
 })
 </script>
 
@@ -193,6 +233,55 @@ onMounted(() => {
           <p v-if="integrations.vercelConnected" class="text-caption-2 mt-2 text-system-green">
             Vercel connected
           </p>
+        </div>
+
+        <IOSListItem
+          title="Google Calendar"
+          :subtitle="googleCalendar.connected ? `Connected as ${googleCalendar.email ?? 'Google account'}` : 'Sync exams & task due dates to Google Calendar'"
+        >
+          <template #icon>
+            <PhCalendar :size="22" class="text-[var(--color-system-red)]" weight="fill" />
+          </template>
+          <template #trailing>
+            <div class="flex gap-2" @click.stop>
+              <IOSButton v-if="!googleCalendar.connected" size="sm" @click="connectGoogleCalendar">
+                Connect
+              </IOSButton>
+              <IOSButton v-else size="sm" variant="bordered" :loading="googleCalendar.syncing" @click="syncGoogleCalendarNow">
+                Sync now
+              </IOSButton>
+            </div>
+          </template>
+        </IOSListItem>
+
+        <div v-if="googleCalendar.connected" class="space-y-1 px-4 py-2">
+          <IOSListItem title="Sync task due dates" @click.prevent>
+            <template #trailing>
+              <div @click.stop>
+                <IOSSwitch
+                  :model-value="googleCalendar.settings.sync_tasks !== false"
+                  label="Sync tasks"
+                  :disabled="savingCalendarSettings"
+                  @update:model-value="updateCalendarToggle('sync_tasks', $event)"
+                />
+              </div>
+            </template>
+          </IOSListItem>
+          <IOSListItem title="Sync exams" @click.prevent>
+            <template #trailing>
+              <div @click.stop>
+                <IOSSwitch
+                  :model-value="googleCalendar.settings.sync_exams !== false"
+                  label="Sync exams"
+                  :disabled="savingCalendarSettings"
+                  @update:model-value="updateCalendarToggle('sync_exams', $event)"
+                />
+              </div>
+            </template>
+          </IOSListItem>
+          <IOSButton variant="plain" size="sm" class="text-system-red" @click="disconnectGoogleCalendar">
+            Disconnect Google Calendar
+          </IOSButton>
         </div>
       </IOSListGroup>
 

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { isToday, isPast, parseISO, startOfDay } from 'date-fns'
 import { supabase } from '@/lib/supabase'
+import { enqueueCalendarSync } from '@/lib/calendar/syncClient'
 import type { Task, TaskPriority } from '@/types'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
@@ -146,6 +147,7 @@ export const useTasksStore = defineStore('tasks', () => {
     if (!tasks.value.find((t) => t.id === data.id)) {
       tasks.value.push(data)
     }
+    enqueueCalendarSync('upsert', 'task', data.id)
     return data
   }
 
@@ -160,6 +162,7 @@ export const useTasksStore = defineStore('tasks', () => {
     if (err) throw err
     const idx = tasks.value.findIndex((t) => t.id === id)
     if (idx !== -1) tasks.value[idx] = data
+    enqueueCalendarSync('upsert', 'task', id)
     return data
   }
 
@@ -178,6 +181,7 @@ export const useTasksStore = defineStore('tasks', () => {
     const { error: err } = await supabase.from('tasks').delete().eq('id', id)
     if (err) throw err
     tasks.value = tasks.value.filter((t) => t.id !== id)
+    enqueueCalendarSync('delete', 'task', id)
   }
 
   async function reorderTasks(orderedIds: string[]) {

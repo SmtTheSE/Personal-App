@@ -41,6 +41,9 @@ export const useIntegrationsStore = defineStore('integrations', () => {
   const vercelConnected = computed(
     () => statuses.value.find((s) => s.provider === 'vercel')?.connected ?? false
   )
+  const googleCalendarConnected = computed(
+    () => statuses.value.find((s) => s.provider === 'google_calendar')?.connected ?? false
+  )
 
   async function fetchStatuses() {
     const { data, error } = await supabase
@@ -49,7 +52,7 @@ export const useIntegrationsStore = defineStore('integrations', () => {
 
     if (error) throw error
 
-    const providers: IntegrationProvider[] = ['github', 'vercel']
+    const providers: IntegrationProvider[] = ['github', 'vercel', 'google_calendar']
     statuses.value = providers.map((provider) => {
       const row = data?.find((d) => d.provider === provider)
       return {
@@ -174,6 +177,7 @@ export const useIntegrationsStore = defineStore('integrations', () => {
     dashboardLoading,
     githubConnected,
     vercelConnected,
+    googleCalendarConnected,
     fetchStatuses,
     syncGithubFromSession,
     saveVercelToken,

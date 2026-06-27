@@ -1,4 +1,4 @@
-import { ref, computed, type Ref } from 'vue'
+import { ref, computed, watch, type Ref } from 'vue'
 import {
   startOfWeek,
   endOfWeek,
@@ -8,12 +8,14 @@ import {
   parseISO,
   addWeeks,
   subWeeks,
+  endOfDay,
 } from 'date-fns'
 import { useTasksStore } from '@/stores/tasks'
 import { useExamsStore } from '@/stores/exams'
 import { useAnalyticsStore, useInterviewStore } from '@/stores/analytics'
+import { useGoogleCalendarStore } from '@/stores/googleCalendar'
 
-export type CalendarEventType = 'task' | 'exam' | 'focus' | 'review'
+export type CalendarEventType = 'task' | 'exam' | 'focus' | 'review' | 'busy'
 
 export interface CalendarEvent {
   id: string
@@ -33,6 +35,18 @@ export function useCalendarWeek(anchorDate?: Ref<Date>) {
   const examsStore = useExamsStore()
   const analyticsStore = useAnalyticsStore()
   const interviewStore = useInterviewStore()
+  const googleCalendar = useGoogleCalendarStore()
+
+  async function refreshBusyBlocks() {
+    await googleCalendar.loadStatus().catch(() => {})
+    if (!googleCalendar.connected) return
+    const end = endOfWeek(weekStart.value, { weekStartsOn: 1 })
+    await googleCalendar.loadBusyBlocks(weekStart.value.toISOString(), endOfDay(end).toISOString())
+  }
+
+  watch(weekStart, () => {
+    void refreshBusyBlocks()
+  }, { immediate: true })
 
   const weekDays = computed(() => {
     const end = endOfWeek(weekStart.value, { weekStartsOn: 1 })
@@ -100,6 +114,17 @@ export function useCalendarWeek(anchorDate?: Ref<Date>) {
         date: parseISO(dateStr),
         color: 'var(--color-system-orange)',
         path: '/interview',
+      })
+    }
+
+    for (const block of googleCalendar.busyBlocks) {
+      events.push({
+        id: `busy-${block.id}`,
+        type: 'busy',
+        title: block.title,
+        subtitle: block.allDay ? 'Busy (all day)' : 'Busy',
+        date: parseISO(block.start),
+        color: 'var(--color-system-gray)',
       })
     }
 

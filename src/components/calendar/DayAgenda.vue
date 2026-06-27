@@ -11,6 +11,7 @@ import {
   PhTimer,
   PhBrain,
   PhCalendarBlank,
+  PhCalendarX,
 } from '@phosphor-icons/vue'
 
 defineProps<{
@@ -25,6 +26,7 @@ const icons = {
   exam: PhExam,
   focus: PhTimer,
   review: PhBrain,
+  busy: PhCalendarX,
 }
 
 const typeLabels = {
@@ -32,6 +34,7 @@ const typeLabels = {
   exam: 'Exam',
   focus: 'Focus',
   review: 'Review',
+  busy: 'Busy',
 }
 </script>
 

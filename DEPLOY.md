@@ -49,8 +49,11 @@ In [Supabase → Authentication → URL Configuration](https://supabase.com/dash
 | `VITE_SUPABASE_URL` | `https://qeocmqftodajblvajnhg.supabase.co` |
 | `VITE_SUPABASE_ANON_KEY` | your Supabase anon key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase **service role** key (server-only — never expose as `VITE_`) |
+| `GOOGLE_CLIENT_ID` | Google Cloud OAuth client ID (Calendar sync) |
+| `GOOGLE_CLIENT_SECRET` | Google Cloud OAuth client secret |
+| `GOOGLE_REDIRECT_URI` | Optional — defaults to `https://YOUR-APP.vercel.app/api/google/calendar/callback` |
 
-The service role key powers `/api/github/repos` and `/api/vercel/dashboard` so integration tokens stay off the client.
+The service role key powers `/api/github/repos`, `/api/vercel/dashboard`, and `/api/google/calendar/*` so integration tokens stay off the client.
 
 5. Click **Deploy** → copy your Vercel URL (e.g. `https://personal-app-xxx.vercel.app`)
 6. Update GitHub OAuth **Homepage URL** and Supabase **Site URL** / **Redirect URLs** with your real Vercel URL
@@ -77,6 +80,22 @@ vercel --prod
 4. Open **Deployments** for linked repos, live status, and deploy charts.
 
 API routes run as Vercel serverless functions (`nexus/api/`). Local dev: use `vercel dev` (not `vite` alone) to hit `/api/*`.
+
+## 7. Google Calendar
+
+1. Run `supabase/migrations/v6_google_calendar.sql` (or the tail of `schema.sql`) in Supabase SQL Editor.
+2. In [Google Cloud Console](https://console.cloud.google.com/):
+   - Create a project (or use existing)
+   - Enable **Google Calendar API**
+   - **APIs & Services → Credentials → Create OAuth client ID** (Web application)
+   - **Authorized redirect URIs:** `https://YOUR-APP.vercel.app/api/google/calendar/callback` and `http://localhost:3000/api/google/calendar/callback` (for `vercel dev`)
+3. Add env vars to Vercel: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, optional `GOOGLE_REDIRECT_URI`
+4. In Nexus **Settings → Integrations → Google Calendar → Connect**
+   - Task due dates and exams sync as Google Calendar events
+   - Toggle sync per entity type; use **Sync now** for a full reconcile
+   - Focus and Calendar views show imported busy blocks (excluding Nexus-created events)
+
+Scopes: `calendar.events` (write) + `calendar.readonly` (busy import).
 
 ## 7. Verify
 

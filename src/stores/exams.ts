@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { differenceInCalendarDays, parseISO, isFuture, startOfDay } from 'date-fns'
 import { supabase } from '@/lib/supabase'
+import { enqueueCalendarSync } from '@/lib/calendar/syncClient'
 import type { Exam, ExamColor, ExamPrepItem } from '@/types'
 
 export const useExamsStore = defineStore('exams', () => {
@@ -86,6 +87,7 @@ export const useExamsStore = defineStore('exams', () => {
     for (let i = 0; i < defaults.length; i++) {
       await createPrepItem(data.id, defaults[i], i)
     }
+    enqueueCalendarSync('upsert', 'exam', data.id)
     return data
   }
 
@@ -128,6 +130,7 @@ export const useExamsStore = defineStore('exams', () => {
     if (error) throw error
     exams.value = exams.value.filter((e) => e.id !== id)
     prepItems.value = prepItems.value.filter((p) => p.exam_id !== id)
+    enqueueCalendarSync('delete', 'exam', id)
   }
 
   return {

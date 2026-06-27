@@ -74,7 +74,7 @@ export interface DeploymentDashboard {
   stats: DeploymentStats
 }
 
-export type IntegrationProvider = 'github' | 'vercel'
+export type IntegrationProvider = 'github' | 'vercel' | 'google_calendar'
 
 export interface IntegrationStatus {
   provider: IntegrationProvider

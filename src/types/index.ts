@@ -133,12 +133,25 @@ export interface ProjectMilestone {
 export interface UserIntegration {
   id: string
   user_id: string
-  provider: 'github' | 'vercel'
+  provider: 'github' | 'vercel' | 'google_calendar'
   access_token: string
   refresh_token: string | null
   metadata: Record<string, unknown>
   created_at: string
   updated_at: string
+}
+
+export interface CalendarSyncMapping {
+  id: string
+  user_id: string
+  provider: string
+  entity_type: 'task' | 'exam'
+  entity_id: string
+  external_calendar_id: string
+  external_event_id: string
+  content_hash: string
+  last_synced_at: string
+  created_at: string
 }
 
 export interface Database {
@@ -155,6 +168,7 @@ export interface Database {
       exams: { Row: Exam; Insert: Omit<Exam, 'id' | 'created_at'> & { id?: string }; Update: Partial<Exam> }
       exam_prep_items: { Row: ExamPrepItem; Insert: Omit<ExamPrepItem, 'id' | 'created_at'> & { id?: string }; Update: Partial<ExamPrepItem> }
       user_integrations: { Row: UserIntegration; Insert: Omit<UserIntegration, 'id' | 'created_at' | 'updated_at'> & { id?: string }; Update: Partial<UserIntegration> }
+      calendar_sync_mappings: { Row: CalendarSyncMapping; Insert: Omit<CalendarSyncMapping, 'id' | 'created_at' | 'last_synced_at'> & { id?: string; last_synced_at?: string }; Update: Partial<CalendarSyncMapping> }
     }
   }
 }
