@@ -54,6 +54,17 @@ export const useTelegramStore = defineStore('telegram', () => {
           updated_at: data.updated_at,
         }
       : null
+
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    if (
+      data?.access_token &&
+      data.access_token !== 'pending' &&
+      data.metadata?.linked !== false &&
+      timezone &&
+      (data.metadata as Record<string, unknown> | null)?.timezone !== timezone
+    ) {
+      void updateNotifications({ timezone })
+    }
   }
 
   async function connect() {
@@ -101,6 +112,7 @@ export const useTelegramStore = defineStore('telegram', () => {
     digest_enabled?: boolean
     digest_hour_utc?: number
     alert_deploy_fail?: boolean
+    timezone?: string
   }) {
     const headers = await authHeader()
     const res = await fetch('/api/telegram/settings', {

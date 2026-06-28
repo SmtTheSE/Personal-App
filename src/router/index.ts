@@ -1,6 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useTelegramStore } from '@/stores/telegram'
 import { TAB_ROUTES } from '@/design/constants'
+
+let telegramTimezoneSynced = false
 
 const router = createRouter({
   history: createWebHistory(),
@@ -193,6 +196,11 @@ router.beforeEach(async (to) => {
 
   if (to.name === 'onboarding' && auth.isAuthenticated && !auth.needsOnboarding) {
     return { name: 'dashboard' }
+  }
+
+  if (auth.isAuthenticated && to.meta.requiresAuth && !telegramTimezoneSynced) {
+    telegramTimezoneSynced = true
+    void useTelegramStore().fetchStatus().catch(() => {})
   }
 
   if (to.meta.isTab && router.currentRoute.value.meta?.isTab) {

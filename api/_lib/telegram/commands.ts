@@ -1,5 +1,5 @@
-import { serviceFetch } from '../integrations'
-import { getIntegrationToken } from '../integrations'
+import { serviceFetch, getIntegration, getIntegrationToken } from '../integrations'
+import { digestGreeting, resolveTimezone } from './greeting'
 
 interface TaskRow {
   id: string
@@ -130,6 +130,9 @@ export async function handleDeployCommand(userId: string): Promise<string> {
 }
 
 export async function buildDailyDigest(userId: string): Promise<string> {
+  const integration = await getIntegration(userId, 'telegram')
+  const timezone = resolveTimezone(integration?.metadata ?? {})
+  const { label, emoji } = digestGreeting(timezone)
   const status = await handleStatusCommand(userId)
-  return [`☀️ <b>Good morning — Nexus digest</b>`, '', status].join('\n')
+  return [`${emoji} <b>${label} — Nexus digest</b>`, '', status].join('\n')
 }

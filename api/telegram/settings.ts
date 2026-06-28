@@ -21,13 +21,19 @@ export default async function handler(request: Request): Promise<Response> {
       return errorResponse('Telegram not connected', 400)
     }
 
-    const body = (await request.json()) as Partial<TelegramNotificationSettings>
+    const body = (await request.json()) as Partial<TelegramNotificationSettings> & {
+      timezone?: string
+    }
     const current = parseTelegramNotifications(existing.metadata ?? {})
     const metadata = mergeTelegramNotifications(existing.metadata ?? {}, {
       digest_enabled: body.digest_enabled ?? current.digest_enabled,
       digest_hour_utc: body.digest_hour_utc ?? current.digest_hour_utc,
       alert_deploy_fail: body.alert_deploy_fail ?? current.alert_deploy_fail,
     })
+
+    if (typeof body.timezone === 'string' && body.timezone.length > 0) {
+      metadata.timezone = body.timezone
+    }
 
     await upsertIntegration(user.id, 'telegram', {
       access_token: existing.access_token,

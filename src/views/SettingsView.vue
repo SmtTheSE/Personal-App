@@ -124,8 +124,16 @@ async function saveVercelToken() {
   savingVercel.value = false
 }
 
+async function syncTelegramTimezone() {
+  if (!telegram.connected) return
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+  if (!timezone) return
+  await telegram.updateNotifications({ timezone }).catch(() => {})
+}
+
 async function connectTelegram() {
   await run(() => telegram.connect(), { successMessage: 'Open Telegram and tap Start' })
+  await syncTelegramTimezone()
 }
 
 async function disconnectTelegram() {
@@ -149,6 +157,8 @@ onMounted(async () => {
     googleCalendar.loadStatus().catch(() => {}),
     telegram.fetchStatus().catch(() => {}),
   ])
+
+  await syncTelegramTimezone()
 
   const calendarStatus = route.query.calendar
   if (calendarStatus === 'connected') {
