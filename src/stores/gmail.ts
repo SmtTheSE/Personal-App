@@ -22,7 +22,7 @@ export const useGmailStore = defineStore('gmail', () => {
   const lastSyncAt = ref<string | null>(null)
   const lastSync = ref<GmailSyncStats | null>(null)
   const alertEnabled = ref(true)
-  const alertKeywords = ref<string[]>(['Saigon Business School'])
+  const alertKeywords = ref<string[]>(['@sbsedu.vn', '@sbsuni.edu.vn'])
   const lastAlertCheckAt = ref<string | null>(null)
   const lastAlertStats = ref<{ notified: number; checked: number } | null>(null)
   const loading = ref(false)
@@ -53,7 +53,7 @@ export const useGmailStore = defineStore('gmail', () => {
       alertEnabled.value = body.alert_enabled !== false
       alertKeywords.value = Array.isArray(body.alert_keywords) && body.alert_keywords.length
         ? body.alert_keywords
-        : ['Saigon Business School']
+        : ['@sbsedu.vn', '@sbsuni.edu.vn']
       lastAlertCheckAt.value = body.last_alert_check_at ?? null
       lastAlertStats.value = body.last_alert_stats ?? null
     } catch (err) {

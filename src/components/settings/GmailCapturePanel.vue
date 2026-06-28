@@ -155,12 +155,12 @@ function formatWhen(iso: string | null) {
             v-model="keywordsDraft"
             type="text"
             class="min-w-0 flex-1 rounded-[10px] fill-tertiary px-4 py-2 text-body text-primary outline-none"
-            placeholder="Saigon Business School, sbs.edu.vn"
+            placeholder="@sbsedu.vn, @sbsuni.edu.vn"
           />
           <IOSButton size="sm" variant="bordered" @click="saveAlertKeywords">Save</IOSButton>
         </div>
         <p class="text-caption-1 text-tertiary">
-          Matches sender, subject, or body. Default: Saigon Business School.
+          Use <code>@sbsedu.vn</code> and <code>@sbsuni.edu.vn</code> to match all SBS senders (Student Services, Finance, Registrar, etc.).
         </p>
         <IOSButton size="sm" variant="bordered" @click="testAlerts">Check inbox now</IOSButton>
         <p v-if="gmail.lastAlertCheckAt" class="text-caption-1 text-tertiary">

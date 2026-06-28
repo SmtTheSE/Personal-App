@@ -3,7 +3,15 @@ import { refreshGoogleAccessToken } from '../google/oauth.js'
 
 export const GMAIL_API = 'https://gmail.googleapis.com/gmail/v1/users/me'
 
-export const DEFAULT_ALERT_KEYWORDS = ['Saigon Business School']
+export const DEFAULT_ALERT_KEYWORDS = [
+  '@sbsedu.vn',
+  '@sbsuni.edu.vn',
+  'studentservices@sbsedu.vn',
+  'finance@sbsedu.vn',
+  'career@sbsedu.vn',
+  'registrar@sbsuni.edu.vn',
+  'Saigon Business School',
+]
 
 export interface GmailAlertSettings {
   alert_enabled: boolean
@@ -63,14 +71,29 @@ export function formatGmailAfter(date: Date): string {
 }
 
 export function buildAlertSearchQuery(keywords: string[], after?: Date): string {
-  const parts = keywords.map((keyword) => {
-    const trimmed = keyword.trim()
-    const quoted = trimmed.includes(' ') ? `"${trimmed}"` : trimmed
-    return `(from:${quoted} OR subject:${quoted} OR ${quoted})`
-  })
+  const parts = keywords.map((keyword) => keywordToGmailClause(keyword)).filter(Boolean)
+  if (!parts.length) parts.push(keywordToGmailClause('@sbsedu.vn'))
   let query = `(${parts.join(' OR ')}) in:inbox`
   if (after) query += ` after:${formatGmailAfter(after)}`
   return query
+}
+
+function keywordToGmailClause(keyword: string): string {
+  const trimmed = keyword.trim()
+  if (!trimmed) return ''
+
+  // Domain shorthand — @sbsedu.vn matches all school senders
+  if (trimmed.startsWith('@')) {
+    return `from:${trimmed.slice(1)}`
+  }
+
+  // Full email — studentservices@sbsedu.vn
+  if (trimmed.includes('@')) {
+    return `from:${trimmed}`
+  }
+
+  const quoted = trimmed.includes(' ') ? `"${trimmed}"` : trimmed
+  return `(from:${quoted} OR subject:${quoted} OR ${quoted})`
 }
 
 export function escapeHtml(text: string): string {
