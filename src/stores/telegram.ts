@@ -56,25 +56,46 @@ export const useTelegramStore = defineStore('telegram', () => {
       : null
 
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    const timezone_offset = new Date().getTimezoneOffset()
     if (
       data?.access_token &&
       data.access_token !== 'pending' &&
       data.metadata?.linked !== false &&
-      timezone &&
-      (data.metadata as Record<string, unknown> | null)?.timezone !== timezone
+      timezone
     ) {
-      void updateNotifications({ timezone })
+      const meta = (data.metadata as Record<string, unknown> | null) ?? {}
+      if (meta.timezone !== timezone || meta.timezone_offset !== timezone_offset) {
+        void updateNotifications({ timezone, timezone_offset })
+      }
     }
+  }
+
+  async function syncTimePrefs() {
+    if (!connected.value) return
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    if (!timezone) return
+    const timezone_offset = new Date().getTimezoneOffset()
+    await updateNotifications({ timezone, timezone_offset })
   }
 
   async function connect() {
     connecting.value = true
     try {
       const headers = await authHeader()
-      const res = await fetch('/api/telegram/connect', { headers })
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+      const timezone_offset = new Date().getTimezoneOffset()
+      const res = await fetch('/api/telegram/connect', {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ timezone, timezone_offset }),
+      })
       const body = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(body.error ?? 'Connect failed')
-      const data = body as TelegramConnectResponse
+      const data = body as TelegramConnectResponse & { linked?: boolean }
+      if (data.linked) {
+        await fetchStatus()
+        return data
+      }
       linkUrl.value = data.link_url
       botUsername.value = data.bot_username
       await fetchStatus()
@@ -113,6 +134,7 @@ export const useTelegramStore = defineStore('telegram', () => {
     digest_hour_utc?: number
     alert_deploy_fail?: boolean
     timezone?: string
+    timezone_offset?: number
   }) {
     const headers = await authHeader()
     const res = await fetch('/api/telegram/settings', {
@@ -133,6 +155,7 @@ export const useTelegramStore = defineStore('telegram', () => {
     displayName,
     notifications,
     fetchStatus,
+    syncTimePrefs,
     connect,
     disconnect,
     updateNotifications,

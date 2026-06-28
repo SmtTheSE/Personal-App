@@ -40,6 +40,8 @@ export const useAuthStore = defineStore('auth', () => {
         const { useIntegrationsStore } = await import('@/stores/integrations')
         useIntegrationsStore().syncGithubFromSession().catch(() => {})
       }
+      const { useTelegramStore } = await import('@/stores/telegram')
+      void useTelegramStore().fetchStatus().catch(() => {})
     }
 
     supabase.auth.onAuthStateChange(async (event, newSession) => {

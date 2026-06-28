@@ -23,6 +23,7 @@ export default async function handler(request: Request): Promise<Response> {
 
     const body = (await request.json()) as Partial<TelegramNotificationSettings> & {
       timezone?: string
+      timezone_offset?: number
     }
     const current = parseTelegramNotifications(existing.metadata ?? {})
     const metadata = mergeTelegramNotifications(existing.metadata ?? {}, {
@@ -33,6 +34,9 @@ export default async function handler(request: Request): Promise<Response> {
 
     if (typeof body.timezone === 'string' && body.timezone.length > 0) {
       metadata.timezone = body.timezone
+    }
+    if (typeof body.timezone_offset === 'number' && Number.isFinite(body.timezone_offset)) {
+      metadata.timezone_offset = body.timezone_offset
     }
 
     await upsertIntegration(user.id, 'telegram', {

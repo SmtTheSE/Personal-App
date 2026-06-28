@@ -125,10 +125,7 @@ async function saveVercelToken() {
 }
 
 async function syncTelegramTimezone() {
-  if (!telegram.connected) return
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-  if (!timezone) return
-  await telegram.updateNotifications({ timezone }).catch(() => {})
+  await telegram.syncTimePrefs().catch(() => {})
 }
 
 async function connectTelegram() {

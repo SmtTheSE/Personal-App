@@ -1,5 +1,6 @@
-import { serviceFetch, getIntegration, getIntegrationToken } from '../integrations'
-import { digestGreeting, resolveTimezone } from './greeting'
+import { serviceFetch, getIntegration, getIntegrationToken, upsertIntegration } from '../integrations'
+import { digestGreeting, resolveTimePrefs } from './greeting'
+import { mergeTelegramNotifications } from './notify'
 
 interface TaskRow {
   id: string
@@ -133,8 +134,54 @@ export async function handleDeployCommand(userId: string): Promise<string> {
 
 export async function buildDailyDigest(userId: string): Promise<string> {
   const integration = await getIntegration(userId, 'telegram')
-  const timezone = resolveTimezone(integration?.metadata ?? {})
-  const { label, emoji } = digestGreeting(timezone)
+  const prefs = resolveTimePrefs(integration?.metadata ?? {})
+  const { label, emoji } = digestGreeting(prefs)
   const status = await handleStatusCommand(userId)
   return [`${emoji} <b>${label} — Nexus digest</b>`, '', status].join('\n')
+}
+
+export async function handleTimezoneCommand(
+  userId: string,
+  query: string
+): Promise<string> {
+  const integration = await getIntegration(userId, 'telegram')
+  const existing = integration?.metadata ?? {}
+  const trimmed = query.trim()
+
+  if (!trimmed) {
+    const prefs = resolveTimePrefs(existing)
+    const tz = prefs.timeZone ?? 'not set'
+    const offset =
+      prefs.offsetMinutes !== null ? `${prefs.offsetMinutes} min` : 'not set'
+    return [
+      `<b>Timezone</b>`,
+      `IANA: <code>${tz}</code>`,
+      `Offset: <code>${offset}</code>`,
+      '',
+      'Set with: <code>timezone Asia/Bangkok</code>',
+      'Or open Nexus in your browser once to auto-sync.',
+    ].join('\n')
+  }
+
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: trimmed }).format(new Date())
+  } catch {
+    return `Unknown timezone <code>${trimmed}</code>. Example: <code>timezone America/New_York</code>`
+  }
+
+  if (!integration?.access_token || integration.access_token === 'pending') {
+    return 'Telegram not connected.'
+  }
+
+  const metadata = mergeTelegramNotifications(existing, {})
+  metadata.timezone = trimmed
+
+  await upsertIntegration(userId, 'telegram', {
+    access_token: integration.access_token,
+    refresh_token: integration.refresh_token,
+    metadata,
+  })
+
+  const { label, emoji } = digestGreeting({ timeZone: trimmed, offsetMinutes: null })
+  return `${emoji} Timezone set to <code>${trimmed}</code>. Greeting preview: <b>${label}</b>`
 }

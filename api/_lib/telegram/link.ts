@@ -9,14 +9,19 @@ export function generateLinkCode(): string {
   return Array.from(bytes, (b) => CODE_CHARS[b % CODE_CHARS.length]).join('')
 }
 
-export async function createTelegramLink(userId: string) {
+export async function createTelegramLink(
+  userId: string,
+  prefs?: { timezone?: string; timezone_offset?: number }
+) {
   const link_code = generateLinkCode()
   const link_expires = new Date(Date.now() + CODE_TTL_MS).toISOString()
-  const metadata = {
+  const metadata: Record<string, unknown> = {
     link_code,
     link_expires,
     linked: false,
   }
+  if (prefs?.timezone) metadata.timezone = prefs.timezone
+  if (typeof prefs?.timezone_offset === 'number') metadata.timezone_offset = prefs.timezone_offset
 
   const existing = await getIntegration(userId, 'telegram')
   if (existing?.access_token && existing.access_token !== 'pending') {
@@ -29,7 +34,7 @@ export async function createTelegramLink(userId: string) {
     await upsertIntegration(userId, 'telegram', {
       access_token: 'pending',
       refresh_token: null,
-      metadata,
+      metadata: { ...(existing?.metadata ?? {}), ...metadata },
     })
   }
 
@@ -54,10 +59,14 @@ export async function completeTelegramLink(
   chatId: number,
   from?: { username?: string; first_name?: string }
 ) {
+  const existing = await getIntegration(userId, 'telegram')
+  const prior = existing?.metadata ?? {}
+
   await upsertIntegration(userId, 'telegram', {
     access_token: String(chatId),
-    refresh_token: null,
+    refresh_token: existing?.refresh_token ?? null,
     metadata: {
+      ...prior,
       linked: true,
       username: from?.username ?? null,
       first_name: from?.first_name ?? null,
