@@ -11,6 +11,7 @@ import IOSListGroup from '@/components/ui/IOSListGroup.vue'
 import IOSListItem from '@/components/ui/IOSListItem.vue'
 import IOSButton from '@/components/ui/IOSButton.vue'
 import IOSTextField from '@/components/ui/IOSTextField.vue'
+import ProjectContextPanel from '@/components/projects/ProjectContextPanel.vue'
 import { PhGithubLogo, PhGlobe, PhCheckCircle, PhPlus } from '@phosphor-icons/vue'
 import type { ProjectStatus } from '@/types'
 
@@ -120,6 +121,12 @@ async function deleteProject() {
           </a>
         </div>
       </div>
+
+      <IOSListGroup title="Project context">
+        <div class="px-4 py-2">
+          <ProjectContextPanel :project-id="projectId" />
+        </div>
+      </IOSListGroup>
 
       <IOSListGroup title="Milestones">
         <IOSListItem

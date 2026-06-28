@@ -5,6 +5,8 @@ import { onMounted } from 'vue'
 import { useWeeklyPlan } from '@/composables/useWeeklyPlan'
 import { useGoogleCalendarStore } from '@/stores/googleCalendar'
 import { useTasksStore } from '@/stores/tasks'
+import { useAnalyticsStore } from '@/stores/analytics'
+import { useExamsStore } from '@/stores/exams'
 import PageShell from '@/components/layout/PageShell.vue'
 import NavBar from '@/components/layout/NavBar.vue'
 import WeekStrip from '@/components/calendar/WeekStrip.vue'
@@ -17,6 +19,8 @@ const router = useRouter()
 const planner = useWeeklyPlan()
 const googleCalendar = useGoogleCalendarStore()
 const tasksStore = useTasksStore()
+const analyticsStore = useAnalyticsStore()
+const examsStore = useExamsStore()
 
 const selectedDayPlan = computed(() =>
   planner.plan.value.days.find((d) => d.day.toDateString() === planner.selectedDay.value.toDateString())
@@ -37,6 +41,8 @@ function openBlock(blockId: string) {
 async function handleRefresh() {
   await Promise.all([
     tasksStore.fetchTasks(),
+    analyticsStore.fetchSessions(),
+    examsStore.fetchExams(),
     googleCalendar.loadStatus().catch(() => {}),
     planner.refreshGoogleEvents(),
   ])
@@ -67,10 +73,14 @@ onMounted(() => {
     <div class="space-y-6 py-4">
       <div class="grid grid-cols-2 gap-3 px-4 sm:grid-cols-4">
         <WidgetMetric label="Open tasks" :value="String(planner.plan.value.pendingTasks)" :icon="PhListChecks" />
-        <WidgetMetric label="GitHub" :value="String(planner.plan.value.githubTaskCount)" :icon="PhGithubLogo" />
         <WidgetMetric
-          label="Study planned"
-          :value="`${planner.plan.value.totalStudyScheduledMins}m`"
+          label="PR reviews"
+          :value="String(planner.plan.value.prReviewCount)"
+          :icon="PhGithubLogo"
+        />
+        <WidgetMetric
+          label="Study debt"
+          :value="`${planner.plan.value.studyDebtMins ?? 0}m`"
           :icon="PhTimer"
         />
         <WidgetMetric

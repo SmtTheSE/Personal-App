@@ -41,4 +41,6 @@ export interface WeeklyPlanSummary {
   pendingTasks: number
   githubTaskCount: number
   prReviewCount: number
+  studyDebtMins?: number
+  heavyMeetingDays?: number
 }

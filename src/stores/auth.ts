@@ -42,6 +42,8 @@ export const useAuthStore = defineStore('auth', () => {
       }
       const { useTelegramStore } = await import('@/stores/telegram')
       void useTelegramStore().fetchStatus().catch(() => {})
+      const { useNotificationsStore } = await import('@/stores/notifications')
+      void useNotificationsStore().runChecks().catch(() => {})
     }
 
     supabase.auth.onAuthStateChange(async (event, newSession) => {

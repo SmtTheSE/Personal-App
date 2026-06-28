@@ -19,6 +19,27 @@ const FOCUS_BLOCK_MINS = 25
 const DAY_START_HOUR = 8
 const DAY_END_HOUR = 21
 
+export interface ExamProximity {
+  id: string
+  title: string
+  exam_at: string
+  course?: string | null
+}
+
+export interface WeeklyPlanInput {
+  weekStart: Date
+  events: CalendarEvent[]
+  tasks: Task[]
+  studyGoalMinsPerDay: number
+  travelBufferMins?: number
+  /** Minutes already logged this week (focus sessions) */
+  studyLoggedMinsByDay?: Record<string, number>
+  /** Upcoming exams for proximity boost */
+  exams?: ExamProximity[]
+  /** PR count in review column */
+  prReviewCount?: number
+}
+
 interface BusyInterval {
   start: Date
   end: Date
@@ -87,7 +108,7 @@ function freeSlots(day: Date, busy: BusyInterval[]): { start: Date; end: Date }[
   return slots
 }
 
-function priorityScore(task: Task) {
+function priorityScore(task: Task, exams: ExamProximity[], day: Date) {
   const map = { high: 3, medium: 2, low: 1 }
   let score = map[task.priority]
   if (isGitHubSyncedTask(task)) score += 0.5
@@ -100,7 +121,34 @@ function priorityScore(task: Task) {
     if (days <= 1) score += 2
     else if (days <= 3) score += 1
   }
+
+  for (const exam of exams) {
+    const daysToExam = (parseISO(exam.exam_at).getTime() - day.getTime()) / (86400000)
+    if (daysToExam >= 0 && daysToExam <= 3) {
+      const courseHint = exam.course?.toLowerCase() ?? exam.title.toLowerCase()
+      if (task.title.toLowerCase().includes(courseHint.split(' ')[0])) score += 2.5
+      else score += 1
+    }
+  }
+
   return score
+}
+
+function energyMultiplier(hour: number, task: Task): number {
+  if (task.kanban_column === 'review' || isGitHubPRTask(task)) {
+    return hour >= 8 && hour < 12 ? 1.3 : 0.9
+  }
+  if (task.priority === 'high') return hour >= 9 && hour < 17 ? 1.2 : 1
+  return 1
+}
+
+function meetingMinsForDay(dayEvents: CalendarEvent[]): number {
+  return dayEvents
+    .filter((e) => e.type === 'google' && !e.allDay)
+    .reduce((sum, e) => {
+      const end = e.endDate ?? addMinutes(e.date, 60)
+      return sum + (end.getTime() - e.date.getTime()) / 60000
+    }, 0)
 }
 
 function eventToPlanBlock(event: CalendarEvent, kind: PlanBlockKind): PlanTimeBlock {
@@ -156,9 +204,9 @@ function taskDeadlineBlock(task: Task, day: Date): PlanTimeBlock | null {
   }
 }
 
-function prReviewBlock(task: Task, day: Date): PlanTimeBlock | null {
+function prReviewBlock(task: Task, day: Date, index: number): PlanTimeBlock | null {
   if (task.kanban_column !== 'review' || task.status === 'done') return null
-  const start = setMinutes(setHours(startOfDay(day), 9), 0)
+  const start = setMinutes(setHours(startOfDay(day), 9), index * 50)
   return {
     id: `review-pr-${task.id}-${day.toISOString()}`,
     kind: 'fixed',
@@ -173,26 +221,29 @@ function prReviewBlock(task: Task, day: Date): PlanTimeBlock | null {
   }
 }
 
-export function buildWeeklyPlan(input: {
-  weekStart: Date
-  events: CalendarEvent[]
-  tasks: Task[]
-  studyGoalMinsPerDay: number
-  travelBufferMins?: number
-}): WeeklyPlanSummary {
+export function buildWeeklyPlan(input: WeeklyPlanInput): WeeklyPlanSummary {
   const travelBufferMins = input.travelBufferMins ?? 0
+  const exams = input.exams ?? []
   const weekEnd = endOfWeek(input.weekStart, { weekStartsOn: 1 })
   const days = eachDayOfInterval({ start: input.weekStart, end: weekEnd })
   const pendingTasks = input.tasks.filter((t) => t.status !== 'done')
-  const rankedTasks = [...pendingTasks].sort((a, b) => priorityScore(b) - priorityScore(a))
-
+  const prReviewTasks = pendingTasks.filter((t) => t.kanban_column === 'review')
   const githubTaskCount = pendingTasks.filter(isGitHubSyncedTask).length
-  const prReviewCount = pendingTasks.filter((t) => t.kanban_column === 'review').length
+  const prReviewCount = input.prReviewCount ?? prReviewTasks.length
+
+  const totalGoalMins = input.studyGoalMinsPerDay * days.length
+  const totalLogged = Object.values(input.studyLoggedMinsByDay ?? {}).reduce((a, b) => a + b, 0)
+  const studyDebtMins = Math.max(0, totalGoalMins - totalLogged)
+
   let taskCursor = 0
 
-  const dayPlans: DayPlan[] = days.map((day) => {
+  const dayPlans: DayPlan[] = days.map((day, dayIndex) => {
+    const dayKey = format(day, 'yyyy-MM-dd')
     const dayEvents = input.events.filter((e) => isSameDay(e.date, day))
     const fixedBlocks: PlanTimeBlock[] = []
+    const rankedTasks = [...pendingTasks].sort(
+      (a, b) => priorityScore(b, exams, day) - priorityScore(a, exams, day)
+    )
 
     for (const event of dayEvents) {
       if (event.type === 'task') continue
@@ -202,10 +253,15 @@ export function buildWeeklyPlan(input: {
     for (const task of pendingTasks) {
       const deadline = taskDeadlineBlock(task, day)
       if (deadline) fixedBlocks.push(deadline)
-      const review = prReviewBlock(task, day)
-      if (review) fixedBlocks.push(review)
     }
 
+    prReviewTasks.slice(0, 5).forEach((task, i) => {
+      const review = prReviewBlock(task, day, i)
+      if (review) fixedBlocks.push(review)
+    })
+
+    const meetingMins = meetingMinsForDay(dayEvents)
+    const heavyMeetingDay = meetingMins >= 240
     const busy = dayEvents
       .map((event) => eventToInterval(event, travelBufferMins))
       .filter((x): x is BusyInterval => x !== null)
@@ -213,7 +269,15 @@ export function buildWeeklyPlan(input: {
     const slots = freeSlots(day, busy)
     const focusBlocks: PlanTimeBlock[] = []
     let scheduledStudy = 0
-    const goal = input.studyGoalMinsPerDay
+
+    let goal = input.studyGoalMinsPerDay
+    if (heavyMeetingDay) goal = Math.max(30, Math.floor(goal * 0.5))
+    if (studyDebtMins > 0 && dayIndex >= 4) {
+      goal = Math.min(goal + Math.floor(studyDebtMins / 2), goal * 2)
+    }
+
+    const loggedToday = input.studyLoggedMinsByDay?.[dayKey] ?? 0
+    goal = Math.max(0, goal - loggedToday)
 
     for (const slot of slots) {
       if (scheduledStudy >= goal) break
@@ -222,33 +286,34 @@ export function buildWeeklyPlan(input: {
         const blockEnd = addMinutes(cursor, FOCUS_BLOCK_MINS)
         if (blockEnd > slot.end) break
 
-        const overlaps = fixedBlocks.some(
-          (b) => cursor < b.end && blockEnd > b.start
-        )
+        const overlaps = fixedBlocks.some((b) => cursor < b.end && blockEnd > b.start)
         if (overlaps) {
           cursor = addMinutes(cursor, 15)
           continue
         }
 
-        const task = rankedTasks[taskCursor % rankedTasks.length]
+        const task = rankedTasks[taskCursor % Math.max(rankedTasks.length, 1)]
         taskCursor++
+        const hour = cursor.getHours()
+        const energy = task ? energyMultiplier(hour, task) : 1
+        const blockMins = heavyMeetingDay ? 15 : FOCUS_BLOCK_MINS
 
         focusBlocks.push({
           id: `focus-${day.toISOString()}-${cursor.getTime()}`,
           kind: 'focus_suggestion',
           title: task ? `Focus: ${task.title}` : 'Study block',
           subtitle: task
-            ? `${FOCUS_BLOCK_MINS} min · ${task.priority} priority`
-            : `${FOCUS_BLOCK_MINS} min study session`,
+            ? `${blockMins} min · ${task.priority}${energy > 1.1 ? ' · peak window' : ''}`
+            : `${blockMins} min study session`,
           start: cursor,
-          end: blockEnd,
+          end: addMinutes(cursor, blockMins),
           sourceType: task && isGitHubSyncedTask(task) ? 'github' : task ? 'task' : 'study',
           sourceId: task?.id,
           path: task ? '/tasks' : '/focus',
           suggested: true,
         })
 
-        scheduledStudy += FOCUS_BLOCK_MINS
+        scheduledStudy += blockMins
         cursor = addMinutes(blockEnd, 5)
       }
     }
@@ -262,7 +327,7 @@ export function buildWeeklyPlan(input: {
       label: isToday(day) ? `Today · ${format(day, 'EEE')}` : format(day, 'EEEE, MMM d'),
       isToday: isToday(day),
       blocks,
-      studyGoalMins: goal,
+      studyGoalMins: goal + loggedToday,
       studyScheduledMins: scheduledStudy,
       openTaskCount: pendingTasks.filter((t) => {
         if (!t.due_date) return true
@@ -279,5 +344,7 @@ export function buildWeeklyPlan(input: {
     pendingTasks: pendingTasks.length,
     githubTaskCount,
     prReviewCount,
+    studyDebtMins,
+    heavyMeetingDays: dayPlans.filter((_, i) => meetingMinsForDay(input.events.filter((e) => isSameDay(e.date, days[i]))) >= 240).length,
   }
 }

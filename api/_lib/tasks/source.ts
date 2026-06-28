@@ -1,4 +1,11 @@
-export type TaskSource = 'manual' | 'github_issue' | 'github_pr' | 'telegram' | 'vercel_deploy'
+export type TaskSource =
+  | 'manual'
+  | 'github_issue'
+  | 'github_pr'
+  | 'telegram'
+  | 'vercel_deploy'
+  | 'gmail'
+  | 'shortcut'
 
 export interface TaskExternalRef {
   provider: TaskSource

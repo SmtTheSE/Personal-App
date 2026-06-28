@@ -1,5 +1,5 @@
 import { getIntegration, getIntegrationToken, serviceFetch } from '../integrations'
-import { notifyUser, parseTelegramNotifications } from '../telegram/notify'
+import { parseTelegramNotifications } from '../telegram/notify'
 import { vercelDeployRef } from '../tasks/source'
 
 interface VercelDeploymentRaw {
@@ -165,11 +165,16 @@ export async function syncVercelDeployFailures(userId: string): Promise<VercelDe
 
       if (notifySettings.alert_deploy_fail) {
         const url = deployment.url ? `https://${deployment.url}` : ''
-        const sent = await notifyUser(
-          userId,
-          `🚨 <b>Deploy failed</b>: ${deployment.name}\nTask created in Nexus.${url ? `\n${url}` : ''}`
-        )
-        if (sent) stats.notified++
+        const { dispatchNotification } = await import('../notify/hub')
+        const r = await dispatchNotification(userId, {
+          event_type: 'deploy_fail',
+          title: `Deploy failed: ${deployment.name}`,
+          body: 'A task was created in Nexus.',
+          dedupe_key: `deploy_fail:${deployment.uid}`,
+          telegram_html: `🚨 <b>Deploy failed</b>: ${deployment.name}\nTask created in Nexus.${url ? `\n${url}` : ''}`,
+          payload: { deployment_uid: deployment.uid, url },
+        })
+        if (r.telegram || r.in_app || r.web_push) stats.notified++
       }
     } catch (err) {
       stats.errors.push(

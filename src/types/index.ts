@@ -58,7 +58,7 @@ export interface Task {
   created_at: string
 }
 
-export type TaskSource = 'manual' | 'github_issue' | 'github_pr' | 'telegram' | 'vercel_deploy'
+export type TaskSource = 'manual' | 'github_issue' | 'github_pr' | 'telegram' | 'vercel_deploy' | 'gmail' | 'shortcut'
 
 export type SessionType = 'focus' | 'short_break' | 'long_break' | 'review'
 
