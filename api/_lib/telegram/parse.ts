@@ -6,6 +6,7 @@ export type TelegramCommand =
   | { type: 'done'; query: string }
   | { type: 'deploy' }
   | { type: 'plan' }
+  | { type: 'share_plan' }
   | { type: 'digest' }
   | { type: 'timezone'; query: string }
   | { type: 'gmail'; query: string }
@@ -49,6 +50,7 @@ export function parseTelegramMessage(raw: string): TelegramCommand {
   if (lower === 'status' || lower === '/status') return { type: 'status' }
   if (lower === 'deploy' || lower === '/deploy') return { type: 'deploy' }
   if (lower === 'plan' || lower === '/plan') return { type: 'plan' }
+  if (lower === 'share plan' || lower === '/shareplan' || lower === 'invite plan') return { type: 'share_plan' }
   if (lower === 'digest' || lower === '/digest') return { type: 'digest' }
 
   const timezoneMatch = text.match(/^(?:\/timezone|timezone)\s*(.*)$/i)
@@ -90,7 +92,9 @@ export const HELP_TEXT = [
   '<b>task</b> Buy milk tomorrow',
   '<b>note</b> Lecture recap | Key ideas',
   '<b>status</b> — open tasks & streak',
-  '<b>plan</b> / <b>digest</b> — daily summary on demand',
+  '<b>plan</b> — today\'s schedule (tasks, study, exams)',
+  '<b>share plan</b> — invite link so someone can view your plan only',
+  '<b>digest</b> — full daily summary with streak',
   '<b>timezone</b> Asia/Bangkok — set local time for greetings',
   '<b>gmail</b> — recent school inbox (SBS mail)',
   '<b>gmail 1</b> — read full email #1 from the list',
