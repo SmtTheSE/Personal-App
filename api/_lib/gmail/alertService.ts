@@ -2,10 +2,14 @@ import { getIntegration, upsertIntegration } from '../integrations.js'
 import { dispatchNotification } from '../notify/hub.js'
 import {
   buildAlertSearchQuery,
-  escapeHtml,
+  extractGmailBody,
+  formatTelegramEmailAlert,
   getGmailAccessToken,
   gmailFetch,
+  GmailFullMessage,
+  normalizeEmailBody,
   parseGmailAlertSettings,
+  readGmailHeader,
 } from './client.js'
 
 export interface GmailRecentEmail {
@@ -14,6 +18,7 @@ export interface GmailRecentEmail {
   subject: string
   from: string
   snippet: string
+  body: string
   received_at: string
 }
 
@@ -21,27 +26,16 @@ interface GmailListResponse {
   messages?: { id: string }[]
 }
 
-interface GmailMessageMeta {
-  id: string
-  threadId: string
-  snippet: string
-  internalDate?: string
-  payload?: { headers?: { name: string; value: string }[] }
-}
-
-function readHeader(message: GmailMessageMeta, name: string): string {
-  const headers = message.payload?.headers ?? []
-  return headers.find((h) => h.name.toLowerCase() === name.toLowerCase())?.value ?? ''
-}
-
-function toRecentEmail(full: GmailMessageMeta): GmailRecentEmail {
+function toRecentEmail(full: GmailFullMessage): GmailRecentEmail {
   const internalMs = full.internalDate ? Number(full.internalDate) : Date.now()
+  const bodyRaw = extractGmailBody(full.payload ?? {}) || full.snippet || ''
   return {
     id: full.id,
     thread_id: full.threadId,
-    subject: readHeader(full, 'Subject') || full.snippet || '(No subject)',
-    from: readHeader(full, 'From') || 'Unknown sender',
+    subject: readGmailHeader(full, 'Subject') || full.snippet || '(No subject)',
+    from: readGmailHeader(full, 'From') || 'Unknown sender',
     snippet: full.snippet?.slice(0, 200) ?? '',
+    body: normalizeEmailBody(bodyRaw),
     received_at: new Date(internalMs).toISOString(),
   }
 }
@@ -49,14 +43,14 @@ function toRecentEmail(full: GmailMessageMeta): GmailRecentEmail {
 async function fetchMessageDetails(
   accessToken: string,
   items: { id: string }[]
-): Promise<GmailMessageMeta[]> {
-  const results: GmailMessageMeta[] = []
+): Promise<GmailFullMessage[]> {
+  const results: GmailFullMessage[] = []
   for (const item of items) {
     try {
       const full = (await gmailFetch(
         accessToken,
-        `/messages/${item.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From`
-      )) as GmailMessageMeta
+        `/messages/${item.id}?format=full`
+      )) as GmailFullMessage
       results.push(full)
     } catch (err) {
       console.error(`Failed to load Gmail message ${item.id}:`, err)
@@ -116,16 +110,18 @@ export async function checkGmailAlerts(userId: string) {
       const result = await dispatchNotification(userId, {
         event_type: 'gmail_alert',
         title: email.subject,
-        body: `${email.from}\n${email.snippet}`,
+        body: `${email.from}\n\n${email.body || email.snippet}`,
         dedupe_key: `gmail_alert:${email.id}`,
         payload: {
           message_id: email.id,
           thread_id: email.thread_id,
           from: email.from,
           subject: email.subject,
+          content: email.body,
+          snippet: email.snippet,
           alert: true,
         },
-        telegram_html: `📬 <b>${escapeHtml(email.subject)}</b>\n${escapeHtml(email.from)}\n<i>${escapeHtml(email.snippet)}</i>`,
+        telegram_html: formatTelegramEmailAlert(email),
       })
 
       if (result.in_app || result.telegram || result.web_push) notified++

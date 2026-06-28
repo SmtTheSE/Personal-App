@@ -102,3 +102,97 @@ export function escapeHtml(text: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
 }
+
+export interface GmailPayload {
+  mimeType?: string
+  body?: { data?: string }
+  parts?: GmailPayload[]
+}
+
+export interface GmailFullMessage {
+  id: string
+  threadId: string
+  snippet: string
+  internalDate?: string
+  payload?: GmailPayload & { headers?: { name: string; value: string }[] }
+}
+
+function decodeBase64Url(data: string): string {
+  const padded = data.replace(/-/g, '+').replace(/_/g, '/')
+  return atob(padded)
+}
+
+function stripHtml(html: string): string {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim()
+}
+
+export function extractGmailBody(payload: GmailPayload): string {
+  if (payload.body?.data) {
+    const raw = decodeBase64Url(payload.body.data)
+    if (payload.mimeType === 'text/html') return stripHtml(raw)
+    return raw
+  }
+
+  const parts = payload.parts ?? []
+  for (const part of parts) {
+    if (part.mimeType === 'text/plain') {
+      const text = extractGmailBody(part)
+      if (text.trim()) return text
+    }
+  }
+  for (const part of parts) {
+    if (part.mimeType === 'text/html') {
+      const text = extractGmailBody(part)
+      if (text.trim()) return text
+    }
+  }
+  for (const part of parts) {
+    if (part.mimeType?.startsWith('multipart/')) {
+      const text = extractGmailBody(part)
+      if (text.trim()) return text
+    }
+  }
+  return ''
+}
+
+export function readGmailHeader(message: GmailFullMessage, name: string): string {
+  const headers = message.payload?.headers ?? []
+  return headers.find((h) => h.name.toLowerCase() === name.toLowerCase())?.value ?? ''
+}
+
+export function normalizeEmailBody(raw: string, maxLen = 8000): string {
+  return raw.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim().slice(0, maxLen)
+}
+
+export function truncateText(text: string, max: number): string {
+  if (text.length <= max) return text
+  return `${text.slice(0, max).trim()}…`
+}
+
+export function formatTelegramEmailAlert(email: {
+  subject: string
+  from: string
+  body: string
+  snippet?: string
+}): string {
+  const content = normalizeEmailBody(email.body || email.snippet || '', 3000)
+  return [
+    '📬 <b>' + escapeHtml(email.subject) + '</b>',
+    '<b>From:</b> ' + escapeHtml(email.from),
+    '',
+    escapeHtml(content),
+  ].join('\n')
+}

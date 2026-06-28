@@ -14,6 +14,7 @@ export interface GmailRecentEmail {
   subject: string
   from: string
   snippet: string
+  body: string
   received_at: string
 }
 

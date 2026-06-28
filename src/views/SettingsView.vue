@@ -9,6 +9,7 @@ import { useTelegramStore } from '@/stores/telegram'
 import { useGmailStore } from '@/stores/gmail'
 import { useCaptureStore } from '@/stores/capture'
 import GmailCapturePanel from '@/components/settings/GmailCapturePanel.vue'
+import NotificationInboxPanel from '@/components/settings/NotificationInboxPanel.vue'
 import ShortcutsSetupPanel from '@/components/settings/ShortcutsSetupPanel.vue'
 import { useNotificationsStore } from '@/stores/notifications'
 import { useUiStore } from '@/stores/ui'
@@ -511,6 +512,7 @@ onMounted(async () => {
             <IOSButton size="sm" variant="bordered" @click="runNotificationChecks">Check now</IOSButton>
           </template>
         </IOSListItem>
+        <NotificationInboxPanel />
       </IOSListGroup>
 
       <IOSListGroup title="Appearance">

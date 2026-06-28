@@ -5,7 +5,7 @@ import {
   parseDueFromSubject,
   stripCapturePrefix,
 } from '../capture/parseDate.js'
-import { getGmailAccessToken, gmailFetch } from './client.js'
+import { getGmailAccessToken, gmailFetch, extractGmailBody } from './client.js'
 
 async function hashContent(value: string): Promise<string> {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
@@ -16,26 +16,6 @@ async function hashContent(value: string): Promise<string> {
 
 async function getAccessToken(userId: string): Promise<string | null> {
   return getGmailAccessToken(userId)
-}
-
-function decodeBase64Url(data: string): string {
-  const padded = data.replace(/-/g, '+').replace(/_/g, '/')
-  return atob(padded)
-}
-
-function extractBody(payload: GmailPayload): string {
-  if (payload.body?.data) return decodeBase64Url(payload.body.data)
-  for (const part of payload.parts ?? []) {
-    if (part.mimeType === 'text/plain' && part.body?.data) {
-      return decodeBase64Url(part.body.data)
-    }
-  }
-  for (const part of payload.parts ?? []) {
-    if (part.mimeType === 'text/html' && part.body?.data) {
-      return decodeBase64Url(part.body.data).replace(/<[^>]+>/g, ' ').trim()
-    }
-  }
-  return ''
 }
 
 interface GmailPayload {
@@ -117,7 +97,7 @@ export async function syncGmailCapture(userId: string) {
 
       const headers = (full.payload as { headers?: { name: string; value: string }[] })?.headers ?? []
       const subject = headers.find((h) => h.name.toLowerCase() === 'subject')?.value ?? full.snippet
-      const body = extractBody(full.payload ?? {}) || full.snippet
+      const body = extractGmailBody(full.payload ?? {}) || full.snippet
 
       const kind = inferCaptureKind(subject, inferCaptureKind(body, 'task'))
       const parsed = parseDueFromSubject(stripCapturePrefix(subject))

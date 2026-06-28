@@ -18,6 +18,8 @@ const ui = useUiStore()
 const { run } = useAsyncAction()
 const labelDraft = ref(gmail.labelName)
 const keywordsDraft = ref(gmail.alertKeywords.join(', '))
+const expandedEmailId = ref<string | null>(null)
+const expandedEmailId = ref<string | null>(null)
 
 watch(() => gmail.labelName, (v) => { labelDraft.value = v })
 watch(() => gmail.alertKeywords, (v) => { keywordsDraft.value = v.join(', ') })
@@ -97,6 +99,10 @@ function senderLabel(from: string) {
 
 function gmailUrl(email: GmailRecentEmail) {
   return `https://mail.google.com/mail/u/0/#inbox/${email.thread_id || email.id}`
+}
+
+function toggleEmailExpand(id: string) {
+  expandedEmailId.value = expandedEmailId.value === id ? null : id
 }
 
 onMounted(() => {
@@ -222,17 +228,29 @@ function formatWhen(iso: string | null) {
               :key="email.id"
               class="surface-elevated rounded-xl p-3"
             >
-              <a
-                :href="gmailUrl(email)"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="block no-underline"
-              >
-                <p class="font-medium text-primary line-clamp-2">{{ email.subject }}</p>
+              <button type="button" class="w-full text-left" @click="toggleEmailExpand(email.id)">
+                <p class="font-medium text-primary">{{ email.subject }}</p>
                 <p class="mt-1 text-caption-1 text-tertiary">{{ senderLabel(email.from) }}</p>
-                <p class="mt-1 text-caption-1 text-tertiary line-clamp-2">{{ email.snippet }}</p>
+                <p class="mt-1 text-caption-1 text-tertiary line-clamp-2">{{ email.body || email.snippet }}</p>
                 <p class="mt-1 text-caption-2 text-tertiary">{{ formatWhen(email.received_at) }}</p>
-              </a>
+              </button>
+              <div
+                v-if="expandedEmailId === email.id"
+                class="mt-3 max-h-72 overflow-y-auto rounded-xl fill-tertiary p-3"
+              >
+                <p class="text-caption-1 font-medium text-secondary">Subject</p>
+                <p class="mt-1 text-footnote text-primary">{{ email.subject }}</p>
+                <p class="mt-3 text-caption-1 font-medium text-secondary">Message</p>
+                <p class="mt-1 whitespace-pre-wrap text-footnote text-primary">{{ email.body || email.snippet }}</p>
+                <a
+                  :href="gmailUrl(email)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="mt-3 inline-block text-footnote text-system-blue"
+                >
+                  Open in Gmail →
+                </a>
+              </div>
             </li>
           </ul>
         </div>
