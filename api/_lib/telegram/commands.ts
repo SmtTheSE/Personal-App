@@ -37,22 +37,24 @@ async function fetchNextExam(userId: string): Promise<ExamRow | null> {
 
 async function fetchStudyStreak(userId: string): Promise<number> {
   const res = await serviceFetch(
-    `/rest/v1/study_sessions?user_id=eq.${userId}&select=started_at&order=started_at.desc&limit=60`
+    `/rest/v1/tasks?user_id=eq.${userId}&completed_at=not.is.null&select=completed_at&order=completed_at.desc&limit=365`
   )
   if (!res.ok) return 0
-  const rows = (await res.json()) as { started_at: string }[]
+  const rows = (await res.json()) as { completed_at: string }[]
   if (!rows.length) return 0
 
-  const days = new Set(rows.map((r) => r.started_at.split('T')[0]))
+  const completedDates = new Set(rows.map((row) => row.completed_at.split('T')[0]))
   let streak = 0
-  const cursor = new Date()
-  cursor.setHours(0, 0, 0, 0)
-
-  while (true) {
-    const key = cursor.toISOString().split('T')[0]
-    if (!days.has(key)) break
-    streak++
-    cursor.setDate(cursor.getDate() - 1)
+  const today = new Date()
+  for (let i = 0; i < 365; i++) {
+    const day = new Date(today)
+    day.setDate(day.getDate() - i)
+    const key = day.toISOString().split('T')[0]
+    if (completedDates.has(key)) {
+      streak++
+    } else if (i > 0) {
+      break
+    }
   }
   return streak
 }
