@@ -8,6 +8,8 @@ import { useGoogleCalendarStore } from '@/stores/googleCalendar'
 import { useTelegramStore } from '@/stores/telegram'
 import { useGmailStore } from '@/stores/gmail'
 import { useCaptureStore } from '@/stores/capture'
+import GmailCapturePanel from '@/components/settings/GmailCapturePanel.vue'
+import ShortcutsSetupPanel from '@/components/settings/ShortcutsSetupPanel.vue'
 import { useNotificationsStore } from '@/stores/notifications'
 import { useUiStore } from '@/stores/ui'
 import { useAsyncAction } from '@/composables/useAsyncAction'
@@ -130,18 +132,6 @@ async function saveVercelToken() {
   savingVercel.value = false
 }
 
-async function connectGmail() {
-  await run(() => gmail.connect())
-}
-
-async function syncGmailNow() {
-  await run(() => gmail.sync(), { successMessage: 'Gmail import complete' })
-}
-
-async function createCaptureToken() {
-  await run(() => capture.createToken('Shortcuts'), { successMessage: 'Copy your token now — it won’t show again' })
-}
-
 async function enableWebPush() {
   await run(() => notifications.subscribePush(), { successMessage: 'Web push enabled' })
 }
@@ -188,7 +178,8 @@ onMounted(async () => {
 
   const gmailStatus = route.query.gmail
   if (gmailStatus === 'connected') {
-    ui.showToast('Gmail connected', 'success')
+    await gmail.loadStatus()
+    ui.showToast(gmail.email ? `Gmail connected — ${gmail.email}` : 'Gmail connected', 'success')
     router.replace({ query: {} })
   } else if (gmailStatus === 'error') {
     const message = typeof route.query.message === 'string' ? route.query.message : 'Gmail connection failed'
@@ -488,39 +479,14 @@ onMounted(async () => {
           </IOSButton>
         </div>
 
-        <IOSListItem
-          title="Gmail capture"
-          :subtitle="gmail.connected ? `Label: ${gmail.labelName}` : 'Apply Gmail label nexus/task, then import'"
-        >
-          <template #trailing>
-            <div class="flex gap-2" @click.stop>
-              <IOSButton v-if="!gmail.connected" size="sm" :loading="gmail.loading" @click="connectGmail">
-                Connect
-              </IOSButton>
-              <IOSButton v-else size="sm" variant="bordered" :loading="gmail.syncing" @click="syncGmailNow">
-                Import
-              </IOSButton>
-            </div>
-          </template>
-        </IOSListItem>
+        <GmailCapturePanel />
       </IOSListGroup>
 
-      <IOSListGroup title="Capture & notifications">
-        <IOSListItem title="Shortcuts API token" subtitle="For Apple Shortcuts / Siri — POST /api/capture/resource">
-          <template #trailing>
-            <IOSButton size="sm" variant="bordered" @click="createCaptureToken">Generate</IOSButton>
-          </template>
-        </IOSListItem>
-        <div v-if="capture.lastCreatedToken" class="px-4 py-2">
-          <p class="text-caption-1 text-tertiary">Copy now:</p>
-          <code class="block break-all text-footnote">{{ capture.lastCreatedToken }}</code>
-        </div>
-        <IOSListItem
-          v-for="token in capture.tokens"
-          :key="token.id"
-          :title="token.label"
-          :subtitle="`${token.token_prefix}… · ${token.last_used_at ? 'used' : 'unused'}`"
-        />
+      <IOSListGroup title="Apple Shortcuts & capture">
+        <ShortcutsSetupPanel />
+      </IOSListGroup>
+
+      <IOSListGroup title="Notifications">
         <IOSListItem title="Web push" subtitle="Alerts when Telegram is not connected">
           <template #trailing>
             <IOSButton size="sm" variant="bordered" @click="enableWebPush">Enable</IOSButton>

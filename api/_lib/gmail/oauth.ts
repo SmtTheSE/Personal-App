@@ -3,6 +3,7 @@ import {
   verifyOAuthState,
   exchangeGoogleCode,
   refreshGoogleAccessToken,
+  fetchGoogleEmail,
 } from '../google/oauth'
 import { getIntegration, upsertIntegration } from '../integrations'
 
@@ -39,6 +40,7 @@ export async function buildGmailAuthUrl(requestUrl: string, userId: string) {
 
 export async function completeGmailOAuth(code: string, redirectUri: string, userId: string) {
   const tokens = await exchangeGoogleCode(code, redirectUri)
+  const email = await fetchGoogleEmail(tokens.access_token)
   const existing = await getIntegration(userId, 'gmail')
   await upsertIntegration(userId, 'gmail', {
     access_token: tokens.access_token,
@@ -46,6 +48,7 @@ export async function completeGmailOAuth(code: string, redirectUri: string, user
     metadata: {
       ...(existing?.metadata ?? {}),
       label_name: existing?.metadata?.label_name ?? DEFAULT_GMAIL_LABEL,
+      email: email ?? existing?.metadata?.email ?? null,
       connected_at: new Date().toISOString(),
       expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
     },

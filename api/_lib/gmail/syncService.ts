@@ -177,5 +177,18 @@ export async function syncGmailCapture(userId: string) {
     }
   }
 
+  const integration = await getIntegration(userId, 'gmail')
+  if (integration) {
+    await upsertIntegration(userId, 'gmail', {
+      access_token: integration.access_token,
+      refresh_token: integration.refresh_token,
+      metadata: {
+        ...integration.metadata,
+        last_sync_at: new Date().toISOString(),
+        last_sync: stats,
+      },
+    })
+  }
+
   return stats
 }

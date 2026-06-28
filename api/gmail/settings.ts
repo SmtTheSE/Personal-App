@@ -11,11 +11,16 @@ export default async function handler(request: Request): Promise<Response> {
   try {
     if (request.method === 'GET') {
       const row = await getIntegration(user.id, 'gmail')
+      const meta = row?.metadata ?? {}
       const connected = !!row?.access_token
+      const lastSync = meta.last_sync as { imported?: number; skipped?: number; errors?: string[] } | undefined
       return json({
         connected,
-        label_name: (row?.metadata?.label_name as string) ?? 'nexus/task',
-        connected_at: row?.metadata?.connected_at ?? null,
+        email: (meta.email as string) ?? null,
+        label_name: (meta.label_name as string) ?? 'nexus/task',
+        connected_at: meta.connected_at ?? null,
+        last_sync_at: meta.last_sync_at ?? null,
+        last_sync: lastSync ?? null,
       })
     }
 
