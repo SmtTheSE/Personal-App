@@ -19,7 +19,6 @@ const { run } = useAsyncAction()
 const labelDraft = ref(gmail.labelName)
 const keywordsDraft = ref(gmail.alertKeywords.join(', '))
 const expandedEmailId = ref<string | null>(null)
-const expandedEmailId = ref<string | null>(null)
 
 watch(() => gmail.labelName, (v) => { labelDraft.value = v })
 watch(() => gmail.alertKeywords, (v) => { keywordsDraft.value = v.join(', ') })
