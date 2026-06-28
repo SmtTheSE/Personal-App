@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import { format, parseISO } from 'date-fns'
 import { useGmailStore } from '@/stores/gmail'
+import type { GmailRecentEmail } from '@/stores/gmail'
 import { useNotificationsStore } from '@/stores/notifications'
 import { useUiStore } from '@/stores/ui'
 import { useAsyncAction } from '@/composables/useAsyncAction'
@@ -54,6 +55,11 @@ async function saveAlertKeywords() {
     return
   }
   await run(() => gmail.updateSettings({ alert_keywords: keywords }), { successMessage: 'Alert keywords saved' })
+  void gmail.fetchRecentEmails().catch(() => {})
+}
+
+async function refreshRecent() {
+  await run(() => gmail.fetchRecentEmails(), { successMessage: 'Recent school mail loaded' })
 }
 
 async function toggleAlerts(enabled: boolean) {
@@ -64,17 +70,44 @@ async function toggleAlerts(enabled: boolean) {
 }
 
 async function testAlerts() {
-  const stats = await run(() => gmail.checkAlerts(), {
-    successMessage: 'Inbox checked for school mail',
-  })
+  const stats = await run(() => gmail.checkAlerts())
+  if (stats) {
+    ui.showToast(statsMessage(stats), stats.notified > 0 ? 'success' : 'info')
+  }
   await notifications.fetchEvents()
   const fresh = notifications.events.filter((e) => e.event_type === 'gmail_alert' && !e.read_at)
   if (stats && stats.notified > 0 && fresh.length) {
     playAlertSound()
     showBrowserAlert(fresh[0].title, fresh[0].body.split('\n')[0] ?? fresh[0].body)
-    ui.showToast(`${stats.notified} new school email(s) — check Telegram & notifications`, 'success')
   }
 }
+
+function statsMessage(stats: { notified?: number; checked?: number; recent?: GmailRecentEmail[] } | void) {
+  if (!stats) return 'Inbox checked'
+  const count = stats.recent?.length ?? stats.checked ?? 0
+  if (stats.notified && stats.notified > 0) return `${stats.notified} new alert(s) sent`
+  if (count > 0) return `Found ${count} recent school email(s), no new alerts`
+  return 'No matching school emails in inbox'
+}
+
+function senderLabel(from: string) {
+  const match = from.match(/^(.+?)\s*<[^>]+>$/)
+  return match?.[1]?.replace(/^"|"$/g, '').trim() || from
+}
+
+function gmailUrl(email: GmailRecentEmail) {
+  return `https://mail.google.com/mail/u/0/#inbox/${email.thread_id || email.id}`
+}
+
+onMounted(() => {
+  if (gmail.connected) {
+    void gmail.fetchRecentEmails().catch(() => {})
+  }
+})
+
+watch(() => gmail.connected, (connected) => {
+  if (connected) void gmail.fetchRecentEmails().catch(() => {})
+})
 
 async function disconnect() {
   await run(() => gmail.disconnect(), { successMessage: 'Gmail disconnected' })
@@ -162,11 +195,47 @@ function formatWhen(iso: string | null) {
         <p class="text-caption-1 text-tertiary">
           Use <code>@sbsedu.vn</code> and <code>@sbsuni.edu.vn</code> to match all SBS senders (Student Services, Finance, Registrar, etc.).
         </p>
-        <IOSButton size="sm" variant="bordered" @click="testAlerts">Check inbox now</IOSButton>
+        <IOSButton size="sm" variant="bordered" :loading="gmail.recentLoading" @click="testAlerts">
+          Check inbox now
+        </IOSButton>
         <p v-if="gmail.lastAlertCheckAt" class="text-caption-1 text-tertiary">
           Last checked {{ formatWhen(gmail.lastAlertCheckAt) }}
-          <span v-if="gmail.lastAlertStats"> · {{ gmail.lastAlertStats.notified }} notified</span>
+          <span v-if="gmail.lastAlertStats"> · {{ gmail.lastAlertStats.notified }} new alert(s)</span>
         </p>
+
+        <div class="mt-3">
+          <div class="mb-2 flex items-center justify-between">
+            <p class="text-section-header">Recent school mail</p>
+            <IOSButton size="sm" variant="plain" :loading="gmail.recentLoading" @click="refreshRecent">
+              Refresh
+            </IOSButton>
+          </div>
+          <div v-if="gmail.recentLoading && !gmail.recentSchoolEmails.length" class="text-caption-1 text-tertiary">
+            Loading recent emails…
+          </div>
+          <p v-else-if="!gmail.recentSchoolEmails.length" class="text-caption-1 text-tertiary">
+            No matching emails found in your inbox for these keywords.
+          </p>
+          <ul v-else class="space-y-2">
+            <li
+              v-for="email in gmail.recentSchoolEmails"
+              :key="email.id"
+              class="surface-elevated rounded-xl p-3"
+            >
+              <a
+                :href="gmailUrl(email)"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="block no-underline"
+              >
+                <p class="font-medium text-primary line-clamp-2">{{ email.subject }}</p>
+                <p class="mt-1 text-caption-1 text-tertiary">{{ senderLabel(email.from) }}</p>
+                <p class="mt-1 text-caption-1 text-tertiary line-clamp-2">{{ email.snippet }}</p>
+                <p class="mt-1 text-caption-2 text-tertiary">{{ formatWhen(email.received_at) }}</p>
+              </a>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
 

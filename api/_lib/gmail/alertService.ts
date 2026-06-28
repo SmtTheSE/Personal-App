@@ -8,6 +8,15 @@ import {
   parseGmailAlertSettings,
 } from './client.js'
 
+export interface GmailRecentEmail {
+  id: string
+  thread_id: string
+  subject: string
+  from: string
+  snippet: string
+  received_at: string
+}
+
 interface GmailListResponse {
   messages?: { id: string }[]
 }
@@ -25,63 +34,103 @@ function readHeader(message: GmailMessageMeta, name: string): string {
   return headers.find((h) => h.name.toLowerCase() === name.toLowerCase())?.value ?? ''
 }
 
-export async function checkGmailAlerts(userId: string) {
-  const accessToken = await getGmailAccessToken(userId)
-  if (!accessToken) return { notified: 0, checked: 0, skipped: 'not_connected' as const }
+function toRecentEmail(full: GmailMessageMeta): GmailRecentEmail {
+  const internalMs = full.internalDate ? Number(full.internalDate) : Date.now()
+  return {
+    id: full.id,
+    thread_id: full.threadId,
+    subject: readHeader(full, 'Subject') || full.snippet || '(No subject)',
+    from: readHeader(full, 'From') || 'Unknown sender',
+    snippet: full.snippet?.slice(0, 200) ?? '',
+    received_at: new Date(internalMs).toISOString(),
+  }
+}
 
-  const integration = await getIntegration(userId, 'gmail')
-  if (!integration) return { notified: 0, checked: 0, skipped: 'not_connected' as const }
-
-  const settings = parseGmailAlertSettings(integration.metadata ?? {})
-  if (!settings.alert_enabled) return { notified: 0, checked: 0, skipped: 'disabled' as const }
-
-  const baseline = settings.last_alert_check_at
-    ?? (integration.metadata?.connected_at as string | undefined)
-    ?? new Date().toISOString()
-  const afterDate = new Date(baseline)
-  const query = buildAlertSearchQuery(settings.alert_keywords, afterDate)
-
-  const list = (await gmailFetch(
-    accessToken,
-    `/messages?q=${encodeURIComponent(query)}&maxResults=15`
-  )) as GmailListResponse
-
-  const messages = list.messages ?? []
-  let notified = 0
-  const baselineMs = afterDate.getTime()
-
-  for (const item of messages) {
+async function fetchMessageDetails(
+  accessToken: string,
+  items: { id: string }[]
+): Promise<GmailMessageMeta[]> {
+  const results: GmailMessageMeta[] = []
+  for (const item of items) {
     try {
       const full = (await gmailFetch(
         accessToken,
         `/messages/${item.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From`
       )) as GmailMessageMeta
+      results.push(full)
+    } catch (err) {
+      console.error(`Failed to load Gmail message ${item.id}:`, err)
+    }
+  }
+  return results
+}
 
-      const internalMs = full.internalDate ? Number(full.internalDate) : 0
-      if (internalMs && internalMs <= baselineMs) continue
+export async function listRecentSchoolEmails(userId: string, maxResults = 10): Promise<GmailRecentEmail[]> {
+  const accessToken = await getGmailAccessToken(userId)
+  if (!accessToken) return []
 
-      const subject = readHeader(full, 'Subject') || full.snippet || 'New email'
-      const from = readHeader(full, 'From') || 'Unknown sender'
-      const preview = full.snippet?.slice(0, 160) ?? ''
+  const integration = await getIntegration(userId, 'gmail')
+  if (!integration) return []
 
+  const settings = parseGmailAlertSettings(integration.metadata ?? {})
+  const query = buildAlertSearchQuery(settings.alert_keywords)
+
+  const list = (await gmailFetch(
+    accessToken,
+    `/messages?q=${encodeURIComponent(query)}&maxResults=${Math.min(maxResults, 20)}`
+  )) as GmailListResponse
+
+  const messages = await fetchMessageDetails(accessToken, list.messages ?? [])
+  return messages
+    .map(toRecentEmail)
+    .sort((a, b) => new Date(b.received_at).getTime() - new Date(a.received_at).getTime())
+    .slice(0, maxResults)
+}
+
+export async function checkGmailAlerts(userId: string) {
+  const accessToken = await getGmailAccessToken(userId)
+  if (!accessToken) return { notified: 0, checked: 0, recent: [], skipped: 'not_connected' as const }
+
+  const integration = await getIntegration(userId, 'gmail')
+  if (!integration) return { notified: 0, checked: 0, recent: [], skipped: 'not_connected' as const }
+
+  const settings = parseGmailAlertSettings(integration.metadata ?? {})
+  if (!settings.alert_enabled) {
+    const recent = await listRecentSchoolEmails(userId, 10)
+    return { notified: 0, checked: recent.length, recent, skipped: 'disabled' as const }
+  }
+
+  const baseline = settings.last_alert_check_at
+    ?? (integration.metadata?.connected_at as string | undefined)
+    ?? new Date().toISOString()
+  const baselineMs = new Date(baseline).getTime()
+
+  const recent = await listRecentSchoolEmails(userId, 10)
+  let notified = 0
+
+  for (const email of recent) {
+    const receivedMs = new Date(email.received_at).getTime()
+    if (receivedMs <= baselineMs) continue
+
+    try {
       const result = await dispatchNotification(userId, {
         event_type: 'gmail_alert',
-        title: subject,
-        body: `${from}\n${preview}`,
-        dedupe_key: `gmail_alert:${item.id}`,
+        title: email.subject,
+        body: `${email.from}\n${email.snippet}`,
+        dedupe_key: `gmail_alert:${email.id}`,
         payload: {
-          message_id: item.id,
-          thread_id: full.threadId,
-          from,
-          subject,
+          message_id: email.id,
+          thread_id: email.thread_id,
+          from: email.from,
+          subject: email.subject,
           alert: true,
         },
-        telegram_html: `📬 <b>${escapeHtml(subject)}</b>\n${escapeHtml(from)}\n<i>${escapeHtml(preview)}</i>`,
+        telegram_html: `📬 <b>${escapeHtml(email.subject)}</b>\n${escapeHtml(email.from)}\n<i>${escapeHtml(email.snippet)}</i>`,
       })
 
       if (result.in_app || result.telegram || result.web_push) notified++
     } catch (err) {
-      console.error(`Gmail alert check failed for ${item.id}:`, err)
+      console.error(`Gmail alert notify failed for ${email.id}:`, err)
     }
   }
 
@@ -91,9 +140,10 @@ export async function checkGmailAlerts(userId: string) {
     metadata: {
       ...integration.metadata,
       last_alert_check_at: new Date().toISOString(),
-      last_alert_stats: { notified, checked: messages.length },
+      last_alert_stats: { notified, checked: recent.length },
+      recent_school_emails: recent,
     },
   })
 
-  return { notified, checked: messages.length }
+  return { notified, checked: recent.length, recent }
 }

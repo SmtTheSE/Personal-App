@@ -17,6 +17,14 @@ export default async function handler(request: Request): Promise<Response> {
       const connected = !!row?.access_token
       const lastSync = meta.last_sync as { imported?: number; skipped?: number; errors?: string[] } | undefined
       const lastAlertStats = meta.last_alert_stats as { notified?: number; checked?: number } | undefined
+      const recentSchoolEmails = meta.recent_school_emails as {
+        id: string
+        subject: string
+        from: string
+        snippet: string
+        received_at: string
+        thread_id?: string
+      }[] | undefined
       return json({
         connected,
         email: (meta.email as string) ?? null,
@@ -28,6 +36,7 @@ export default async function handler(request: Request): Promise<Response> {
         alert_keywords: alerts.alert_keywords,
         last_alert_check_at: alerts.last_alert_check_at,
         last_alert_stats: lastAlertStats ?? null,
+        recent_school_emails: recentSchoolEmails ?? [],
       })
     }
 

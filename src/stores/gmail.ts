@@ -8,6 +8,15 @@ export interface GmailSyncStats {
   errors: string[]
 }
 
+export interface GmailRecentEmail {
+  id: string
+  thread_id: string
+  subject: string
+  from: string
+  snippet: string
+  received_at: string
+}
+
 async function authHeader(): Promise<Record<string, string>> {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session?.access_token) throw new Error('Not authenticated')
@@ -25,6 +34,8 @@ export const useGmailStore = defineStore('gmail', () => {
   const alertKeywords = ref<string[]>(['@sbsedu.vn', '@sbsuni.edu.vn'])
   const lastAlertCheckAt = ref<string | null>(null)
   const lastAlertStats = ref<{ notified: number; checked: number } | null>(null)
+  const recentSchoolEmails = ref<GmailRecentEmail[]>([])
+  const recentLoading = ref(false)
   const loading = ref(false)
   const syncing = ref(false)
   const loadError = ref<string | null>(null)
@@ -56,6 +67,9 @@ export const useGmailStore = defineStore('gmail', () => {
         : ['@sbsedu.vn', '@sbsuni.edu.vn']
       lastAlertCheckAt.value = body.last_alert_check_at ?? null
       lastAlertStats.value = body.last_alert_stats ?? null
+      if (Array.isArray(body.recent_school_emails)) {
+        recentSchoolEmails.value = body.recent_school_emails
+      }
     } catch (err) {
       loadError.value = err instanceof Error ? err.message : 'Failed to load Gmail status'
       connected.value = false
@@ -123,13 +137,29 @@ export const useGmailStore = defineStore('gmail', () => {
     await updateSettings({ label_name: name })
   }
 
+  async function fetchRecentEmails() {
+    recentLoading.value = true
+    try {
+      const headers = await authHeader()
+      const res = await fetch('/api/gmail/alerts', { headers })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(body.error ?? 'Failed to load recent emails')
+      recentSchoolEmails.value = body.recent ?? []
+      return recentSchoolEmails.value
+    } finally {
+      recentLoading.value = false
+    }
+  }
+
   async function checkAlerts() {
     const headers = await authHeader()
     const res = await fetch('/api/gmail/alerts', { method: 'POST', headers })
     const body = await res.json().catch(() => ({}))
     if (!res.ok) throw new Error(body.error ?? 'Alert check failed')
-    await loadStatus()
-    return body as { notified: number; checked: number }
+    if (Array.isArray(body.recent)) recentSchoolEmails.value = body.recent
+    lastAlertStats.value = { notified: body.notified ?? 0, checked: body.checked ?? 0 }
+    lastAlertCheckAt.value = new Date().toISOString()
+    return body as { notified: number; checked: number; recent: GmailRecentEmail[] }
   }
 
   return {
@@ -143,6 +173,8 @@ export const useGmailStore = defineStore('gmail', () => {
     alertKeywords,
     lastAlertCheckAt,
     lastAlertStats,
+    recentSchoolEmails,
+    recentLoading,
     loading,
     syncing,
     loadError,
@@ -154,5 +186,6 @@ export const useGmailStore = defineStore('gmail', () => {
     updateLabel,
     updateSettings,
     checkAlerts,
+    fetchRecentEmails,
   }
 })
