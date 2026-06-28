@@ -1,9 +1,9 @@
 export const config = { runtime: 'edge' }
 
-import { requireUser } from '../_lib/auth'
-import { getIntegrationToken } from '../_lib/integrations'
-import { fetchGitHubReposPage, GitHubApiError, mapGitHubRepo } from '../_lib/github'
-import { errorResponse, json } from '../_lib/http'
+import { requireUser } from '../_lib/auth.js'
+import { getIntegrationToken } from '../_lib/integrations.js'
+import { fetchGitHubReposPage, GitHubApiError, mapGitHubRepo } from '../_lib/github.js'
+import { errorResponse, json } from '../_lib/http.js'
 
 export default async function handler(request: Request): Promise<Response> {
   if (request.method !== 'GET') {

@@ -1,12 +1,12 @@
-import { fetchAllOpenRepoIssues, type GitHubIssueRaw } from './issuesClient'
+import { fetchAllOpenRepoIssues, type GitHubIssueRaw } from './issuesClient.js'
 import {
   parseIssueSyncSettings,
   type GitHubIssueSyncStats,
-} from './issueSettings'
-import { priorityFromLabels } from './priority'
-import { getIntegration, getIntegrationToken, serviceFetch } from '../integrations'
-import { formatGitHubFooter, githubIssueRef } from '../tasks/source'
-import { buildDescription, mergeSyncedTaskUpdate } from '../tasks/syncHelpers'
+} from './issueSettings.js'
+import { priorityFromLabels } from './priority.js'
+import { getIntegration, getIntegrationToken, serviceFetch } from '../integrations.js'
+import { formatGitHubFooter, githubIssueRef } from '../tasks/source.js'
+import { buildDescription, mergeSyncedTaskUpdate } from '../tasks/syncHelpers.js'
 
 interface IssueMapping {
   id: string

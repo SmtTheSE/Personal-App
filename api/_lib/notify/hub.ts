@@ -1,8 +1,8 @@
-import { serviceFetch, getIntegration } from '../integrations'
-import { notifyUser } from '../telegram/notify'
-import { parseTelegramNotifications } from '../telegram/notify'
-import type { NotificationPayload, NotificationPreferences } from './types'
-import { eventEnabled, parseNotificationPrefs } from './types'
+import { serviceFetch, getIntegration } from '../integrations.js'
+import { notifyUser } from '../telegram/notify.js'
+import { parseTelegramNotifications } from '../telegram/notify.js'
+import type { NotificationPayload, NotificationPreferences } from './types.js'
+import { eventEnabled, parseNotificationPrefs } from './types.js'
 
 async function recordInAppEvent(userId: string, event: NotificationPayload): Promise<boolean> {
   const res = await serviceFetch('/rest/v1/notification_events', {

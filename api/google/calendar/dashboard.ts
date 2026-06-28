@@ -1,13 +1,13 @@
 export const config = { runtime: 'edge' }
 
-import { requireUser } from '../../_lib/auth'
-import { getIntegration, serviceFetch } from '../../_lib/integrations'
+import { requireUser } from '../../_lib/auth.js'
+import { getIntegration, serviceFetch } from '../../_lib/integrations.js'
 import {
   getGoogleAccessToken,
   listGoogleBusyEvents,
   parseGoogleSettings,
-} from '../../_lib/google/calendarClient'
-import { errorResponse, json } from '../../_lib/http'
+} from '../../_lib/google/calendarClient.js'
+import { errorResponse, json } from '../../_lib/http.js'
 
 interface SyncMappingRow {
   entity_type: 'task' | 'exam'

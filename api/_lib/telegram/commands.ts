@@ -1,6 +1,6 @@
-import { serviceFetch, getIntegration, getIntegrationToken, upsertIntegration } from '../integrations'
-import { digestGreeting, resolveTimePrefs } from './greeting'
-import { mergeTelegramNotifications } from './notify'
+import { serviceFetch, getIntegration, getIntegrationToken, upsertIntegration } from '../integrations.js'
+import { digestGreeting, resolveTimePrefs } from './greeting.js'
+import { mergeTelegramNotifications } from './notify.js'
 
 interface TaskRow {
   id: string

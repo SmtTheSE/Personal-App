@@ -1,4 +1,4 @@
-import { serviceFetch } from '../integrations'
+import { serviceFetch } from '../integrations.js'
 
 interface TaskRow {
   id: string

@@ -1,9 +1,9 @@
 export const config = { runtime: 'edge' }
 
-import { requireUser } from '../../_lib/auth'
-import { deleteIntegration, getIntegration, serviceFetch } from '../../_lib/integrations'
-import { deleteGoogleEvent, getGoogleAccessToken } from '../../_lib/google/calendarClient'
-import { errorResponse, json } from '../../_lib/http'
+import { requireUser } from '../../_lib/auth.js'
+import { deleteIntegration, getIntegration, serviceFetch } from '../../_lib/integrations.js'
+import { deleteGoogleEvent, getGoogleAccessToken } from '../../_lib/google/calendarClient.js'
+import { errorResponse, json } from '../../_lib/http.js'
 
 export default async function handler(request: Request): Promise<Response> {
   if (request.method !== 'POST') return errorResponse('Method not allowed', 405)

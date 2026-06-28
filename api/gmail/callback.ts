@@ -1,7 +1,7 @@
 export const config = { runtime: 'edge' }
 
-import { completeGmailOAuth, getGmailRedirectUri, verifyOAuthState } from '../_lib/gmail/oauth'
-import { errorResponse } from '../_lib/http'
+import { completeGmailOAuth, getGmailRedirectUri, verifyOAuthState } from '../_lib/gmail/oauth.js'
+import { errorResponse } from '../_lib/http.js'
 
 export default async function handler(request: Request): Promise<Response> {
   const url = new URL(request.url)

@@ -1,13 +1,13 @@
 export const config = { runtime: 'edge' }
 
-import { requireUser } from '../_lib/auth'
-import { getIntegration, upsertIntegration } from '../_lib/integrations'
+import { requireUser } from '../_lib/auth.js'
+import { getIntegration, upsertIntegration } from '../_lib/integrations.js'
 import {
   mergeTelegramNotifications,
   parseTelegramNotifications,
   type TelegramNotificationSettings,
-} from '../_lib/telegram/notify'
-import { errorResponse, json } from '../_lib/http'
+} from '../_lib/telegram/notify.js'
+import { errorResponse, json } from '../_lib/http.js'
 
 export default async function handler(request: Request): Promise<Response> {
   if (request.method !== 'POST') return errorResponse('Method not allowed', 405)

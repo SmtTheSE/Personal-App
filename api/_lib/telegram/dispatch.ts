@@ -1,6 +1,6 @@
-import { applyCapture } from './capture'
-import type { TelegramCommand } from './parse'
-import { handleDeployCommand, handleDoneCommand, handleStatusCommand, buildDailyDigest, handleTimezoneCommand } from './commands'
+import { applyCapture } from './capture.js'
+import type { TelegramCommand } from './parse.js'
+import { handleDeployCommand, handleDoneCommand, handleStatusCommand, buildDailyDigest, handleTimezoneCommand } from './commands.js'
 
 export async function dispatchTelegramCommand(userId: string, command: TelegramCommand): Promise<string> {
   switch (command.type) {

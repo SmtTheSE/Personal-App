@@ -1,8 +1,8 @@
 export const config = { runtime: 'edge' }
 
-import { requireUser } from '../_lib/auth'
-import { createCaptureToken, listCaptureTokens, revokeCaptureToken } from '../_lib/capture/auth'
-import { errorResponse, json } from '../_lib/http'
+import { requireUser } from '../_lib/auth.js'
+import { createCaptureToken, listCaptureTokens, revokeCaptureToken } from '../_lib/capture/auth.js'
+import { errorResponse, json } from '../_lib/http.js'
 
 export default async function handler(request: Request): Promise<Response> {
   const user = await requireUser(request)

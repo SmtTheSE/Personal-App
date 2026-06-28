@@ -1,8 +1,8 @@
 export const config = { runtime: 'edge' }
 
-import { requireUser } from '../../_lib/auth'
-import { buildGoogleAuthUrl, createOAuthState, getRedirectUri } from '../../_lib/google/oauth'
-import { errorResponse, json } from '../../_lib/http'
+import { requireUser } from '../../_lib/auth.js'
+import { buildGoogleAuthUrl, createOAuthState, getRedirectUri } from '../../_lib/google/oauth.js'
+import { errorResponse, json } from '../../_lib/http.js'
 
 export default async function handler(request: Request): Promise<Response> {
   if (request.method !== 'GET') return errorResponse('Method not allowed', 405)

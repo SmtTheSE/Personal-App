@@ -1,5 +1,5 @@
-import { serviceFetch, getIntegrationToken } from '../integrations'
-import { logStudySession } from '../capture/apply'
+import { serviceFetch, getIntegrationToken } from '../integrations.js'
+import { logStudySession } from '../capture/apply.js'
 
 interface CommitDay {
   date: string

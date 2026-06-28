@@ -1,8 +1,8 @@
 export const config = { runtime: 'edge' }
 
-import { resolveCaptureUserId } from '../_lib/capture/auth'
-import { logStudySession } from '../_lib/capture/apply'
-import { errorResponse, json } from '../_lib/http'
+import { resolveCaptureUserId } from '../_lib/capture/auth.js'
+import { logStudySession } from '../_lib/capture/apply.js'
+import { errorResponse, json } from '../_lib/http.js'
 
 export default async function handler(request: Request): Promise<Response> {
   if (request.method !== 'POST') return errorResponse('Method not allowed', 405)

@@ -1,9 +1,9 @@
 export const config = { runtime: 'edge' }
 
-import { resolveCaptureUserId } from '../_lib/capture/auth'
-import { captureResource, captureTask, captureNote } from '../_lib/capture/apply'
-import { inferCaptureKind, parseDueHint, stripCapturePrefix } from '../_lib/capture/parseDate'
-import { errorResponse, json } from '../_lib/http'
+import { resolveCaptureUserId } from '../_lib/capture/auth.js'
+import { captureResource, captureTask, captureNote } from '../_lib/capture/apply.js'
+import { inferCaptureKind, parseDueHint, stripCapturePrefix } from '../_lib/capture/parseDate.js'
+import { errorResponse, json } from '../_lib/http.js'
 
 export default async function handler(request: Request): Promise<Response> {
   if (request.method !== 'POST') return errorResponse('Method not allowed', 405)

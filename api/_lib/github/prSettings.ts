@@ -1,6 +1,6 @@
-import type { IntegrationRecord } from '../integrations'
-import type { GitHubIssueSyncStats } from './issueSettings'
-import { normalizeRepoList } from './shared'
+import type { IntegrationRecord } from '../integrations.js'
+import type { GitHubIssueSyncStats } from './issueSettings.js'
+import { normalizeRepoList } from './shared.js'
 
 export interface GitHubPRSyncSettings {
   enabled: boolean

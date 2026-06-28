@@ -1,8 +1,8 @@
 export const config = { runtime: 'edge' }
 
-import { requireUser } from '../_lib/auth'
-import { buildGmailAuthUrl } from '../_lib/gmail/oauth'
-import { errorResponse, json } from '../_lib/http'
+import { requireUser } from '../_lib/auth.js'
+import { buildGmailAuthUrl } from '../_lib/gmail/oauth.js'
+import { errorResponse, json } from '../_lib/http.js'
 
 export default async function handler(request: Request): Promise<Response> {
   if (request.method !== 'GET') return errorResponse('Method not allowed', 405)

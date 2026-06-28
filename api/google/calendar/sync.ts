@@ -1,6 +1,6 @@
 export const config = { runtime: 'edge' }
 
-import { requireUser } from '../../_lib/auth'
+import { requireUser } from '../../_lib/auth.js'
 import {
   deleteSyncedEntity,
   fullCalendarSync,
@@ -8,8 +8,8 @@ import {
   syncFocusSession,
   syncTask,
   type CalendarEntityType,
-} from '../../_lib/google/syncService'
-import { errorResponse, json } from '../../_lib/http'
+} from '../../_lib/google/syncService.js'
+import { errorResponse, json } from '../../_lib/http.js'
 
 interface SyncBody {
   action?: 'full' | 'upsert' | 'delete'

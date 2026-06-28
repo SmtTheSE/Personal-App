@@ -1,5 +1,5 @@
-import { GitHubApiError } from '../github'
-import type { GitHubIssueLabel } from './issuesClient'
+import { GitHubApiError } from '../github.js'
+import type { GitHubIssueLabel } from './issuesClient.js'
 
 export interface GitHubPRRaw {
   id: number

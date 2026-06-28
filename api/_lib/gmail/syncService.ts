@@ -1,11 +1,11 @@
-import { getIntegration, upsertIntegration, serviceFetch } from '../integrations'
-import { refreshGoogleAccessToken } from '../google/oauth'
-import { captureNote, captureTask } from '../capture/apply'
+import { getIntegration, upsertIntegration, serviceFetch } from '../integrations.js'
+import { refreshGoogleAccessToken } from '../google/oauth.js'
+import { captureNote, captureTask } from '../capture/apply.js'
 import {
   inferCaptureKind,
   parseDueFromSubject,
   stripCapturePrefix,
-} from '../capture/parseDate'
+} from '../capture/parseDate.js'
 
 const GMAIL_API = 'https://gmail.googleapis.com/gmail/v1/users/me'
 
@@ -177,7 +177,6 @@ export async function syncGmailCapture(userId: string) {
     }
   }
 
-  const integration = await getIntegration(userId, 'gmail')
   if (integration) {
     await upsertIntegration(userId, 'gmail', {
       access_token: integration.access_token,

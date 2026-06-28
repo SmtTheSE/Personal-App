@@ -1,4 +1,4 @@
-import { getIntegration, upsertIntegration, serviceFetch } from '../integrations'
+import { getIntegration, upsertIntegration, serviceFetch } from '../integrations.js'
 
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 const CODE_LENGTH = 8

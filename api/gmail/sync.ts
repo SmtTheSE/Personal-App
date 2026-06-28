@@ -1,8 +1,8 @@
 export const config = { runtime: 'edge' }
 
-import { requireUser } from '../_lib/auth'
-import { syncGmailCapture } from '../_lib/gmail/syncService'
-import { errorResponse, json } from '../_lib/http'
+import { requireUser } from '../_lib/auth.js'
+import { syncGmailCapture } from '../_lib/gmail/syncService.js'
+import { errorResponse, json } from '../_lib/http.js'
 
 export default async function handler(request: Request): Promise<Response> {
   if (request.method !== 'POST') return errorResponse('Method not allowed', 405)

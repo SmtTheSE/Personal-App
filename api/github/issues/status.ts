@@ -1,12 +1,12 @@
 export const config = { runtime: 'edge' }
 
-import { requireUser } from '../../_lib/auth'
-import { getIntegration, getIntegrationToken } from '../../_lib/integrations'
+import { requireUser } from '../../_lib/auth.js'
+import { getIntegration, getIntegrationToken } from '../../_lib/integrations.js'
 import {
   parseIssueSyncSettings,
   readLastSync,
-} from '../../_lib/github/issueSettings'
-import { errorResponse, json } from '../../_lib/http'
+} from '../../_lib/github/issueSettings.js'
+import { errorResponse, json } from '../../_lib/http.js'
 
 export default async function handler(request: Request): Promise<Response> {
   if (request.method !== 'GET') return errorResponse('Method not allowed', 405)

@@ -1,11 +1,11 @@
 export const config = { runtime: 'edge' }
 
-import { requireUser } from '../../_lib/auth'
-import { getIntegration, upsertIntegration } from '../../_lib/integrations'
-import { fullGitHubPRSync } from '../../_lib/github/prSync'
-import { mergePRSyncMetadata } from '../../_lib/github/prSettings'
-import { GitHubApiError } from '../../_lib/github'
-import { errorResponse, json } from '../../_lib/http'
+import { requireUser } from '../../_lib/auth.js'
+import { getIntegration, upsertIntegration } from '../../_lib/integrations.js'
+import { fullGitHubPRSync } from '../../_lib/github/prSync.js'
+import { mergePRSyncMetadata } from '../../_lib/github/prSettings.js'
+import { GitHubApiError } from '../../_lib/github.js'
+import { errorResponse, json } from '../../_lib/http.js'
 
 export default async function handler(request: Request): Promise<Response> {
   if (request.method !== 'POST') return errorResponse('Method not allowed', 405)

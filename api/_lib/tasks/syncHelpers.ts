@@ -1,4 +1,4 @@
-import type { TaskExternalRef, TaskSource } from './source'
+import type { TaskExternalRef, TaskSource } from './source.js'
 
 export interface SyncedTaskRow {
   id: string

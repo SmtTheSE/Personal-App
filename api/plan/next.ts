@@ -1,8 +1,8 @@
 export const config = { runtime: 'edge' }
 
-import { resolveCaptureUserId } from '../_lib/capture/auth'
-import { buildNextUp } from '../_lib/planner/nextUp'
-import { errorResponse, json } from '../_lib/http'
+import { resolveCaptureUserId } from '../_lib/capture/auth.js'
+import { buildNextUp } from '../_lib/planner/nextUp.js'
+import { errorResponse, json } from '../_lib/http.js'
 
 export default async function handler(request: Request): Promise<Response> {
   if (request.method !== 'GET') return errorResponse('Method not allowed', 405)

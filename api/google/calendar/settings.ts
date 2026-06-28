@@ -1,9 +1,9 @@
 export const config = { runtime: 'edge' }
 
-import { requireUser } from '../../_lib/auth'
-import { getIntegration, upsertIntegration } from '../../_lib/integrations'
-import { mergeGoogleSettings, parseGoogleSettings } from '../../_lib/google/calendarClient'
-import { errorResponse, json } from '../../_lib/http'
+import { requireUser } from '../../_lib/auth.js'
+import { getIntegration, upsertIntegration } from '../../_lib/integrations.js'
+import { mergeGoogleSettings, parseGoogleSettings } from '../../_lib/google/calendarClient.js'
+import { errorResponse, json } from '../../_lib/http.js'
 
 interface SettingsBody {
   sync_tasks?: boolean

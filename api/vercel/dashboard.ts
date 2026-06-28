@@ -1,9 +1,9 @@
 export const config = { runtime: 'edge' }
 
-import { requireUser } from '../_lib/auth'
-import { fetchAllGitHubRepos, mapGitHubRepo, type GitHubRepoRaw } from '../_lib/github'
-import { getIntegrationToken, hasIntegration } from '../_lib/integrations'
-import { errorResponse, json } from '../_lib/http'
+import { requireUser } from '../_lib/auth.js'
+import { fetchAllGitHubRepos, mapGitHubRepo, type GitHubRepoRaw } from '../_lib/github.js'
+import { getIntegrationToken, hasIntegration } from '../_lib/integrations.js'
+import { errorResponse, json } from '../_lib/http.js'
 
 interface VercelProjectRaw {
   id: string

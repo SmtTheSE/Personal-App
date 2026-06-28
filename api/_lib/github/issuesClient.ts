@@ -1,4 +1,4 @@
-import { GitHubApiError } from '../github'
+import { GitHubApiError } from '../github.js'
 
 export interface GitHubIssueLabel {
   name: string

@@ -4,8 +4,8 @@ import {
   exchangeGoogleCode,
   refreshGoogleAccessToken,
   fetchGoogleEmail,
-} from '../google/oauth'
-import { getIntegration, upsertIntegration } from '../integrations'
+} from '../google/oauth.js'
+import { getIntegration, upsertIntegration } from '../integrations.js'
 
 export const GMAIL_SCOPES = [
   'https://www.googleapis.com/auth/gmail.readonly',

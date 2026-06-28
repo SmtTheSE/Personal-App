@@ -1,14 +1,14 @@
 export const config = { runtime: 'edge' }
 
-import { json, errorResponse } from '../_lib/http'
-import { sendTelegramMessage, verifyWebhookSecret } from '../_lib/telegram/bot'
-import { dispatchTelegramCommand } from '../_lib/telegram/dispatch'
+import { json, errorResponse } from '../_lib/http.js'
+import { sendTelegramMessage, verifyWebhookSecret } from '../_lib/telegram/bot.js'
+import { dispatchTelegramCommand } from '../_lib/telegram/dispatch.js'
 import {
   completeTelegramLink,
   findUserIdByChatId,
   findUserIdByLinkCode,
-} from '../_lib/telegram/link'
-import { HELP_TEXT, parseTelegramMessage } from '../_lib/telegram/parse'
+} from '../_lib/telegram/link.js'
+import { HELP_TEXT, parseTelegramMessage } from '../_lib/telegram/parse.js'
 
 interface TelegramUpdate {
   message?: {

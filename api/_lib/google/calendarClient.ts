@@ -1,5 +1,5 @@
-import { getIntegration, upsertIntegration, type IntegrationRecord } from '../integrations'
-import { refreshGoogleAccessToken } from './oauth'
+import { getIntegration, upsertIntegration, type IntegrationRecord } from '../integrations.js'
+import { refreshGoogleAccessToken } from './oauth.js'
 
 export interface GoogleCalendarSettings {
   /** @deprecated Use export_calendar_id */

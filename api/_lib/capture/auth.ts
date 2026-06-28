@@ -1,4 +1,5 @@
-import { serviceFetch } from '../integrations'
+import { serviceFetch } from '../integrations.js'
+import { requireUser } from '../auth.js'
 
 async function sha256(value: string): Promise<string> {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
@@ -39,7 +40,6 @@ export async function resolveCaptureUserId(request: Request): Promise<string | R
     return row.user_id
   }
 
-  const { requireUser } = await import('../auth')
   const user = await requireUser(request)
   if (user instanceof Response) return user
   return user.id

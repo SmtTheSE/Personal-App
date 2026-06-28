@@ -1,10 +1,10 @@
-import { fetchAllOpenRepoPulls, fetchGitHubUsername, type GitHubPRRaw } from './prsClient'
-import { parsePRSyncSettings, type GitHubPRSyncSettings } from './prSettings'
-import type { GitHubIssueSyncStats } from './issueSettings'
-import { priorityFromLabels } from './priority'
-import { getIntegration, getIntegrationToken, serviceFetch } from '../integrations'
-import { formatGitHubFooter, githubPrRef } from '../tasks/source'
-import { buildDescription, mergeSyncedTaskUpdate } from '../tasks/syncHelpers'
+import { fetchAllOpenRepoPulls, fetchGitHubUsername, type GitHubPRRaw } from './prsClient.js'
+import { parsePRSyncSettings, type GitHubPRSyncSettings } from './prSettings.js'
+import type { GitHubIssueSyncStats } from './issueSettings.js'
+import { priorityFromLabels } from './priority.js'
+import { getIntegration, getIntegrationToken, serviceFetch } from '../integrations.js'
+import { formatGitHubFooter, githubPrRef } from '../tasks/source.js'
+import { buildDescription, mergeSyncedTaskUpdate } from '../tasks/syncHelpers.js'
 
 interface PRMapping {
   id: string

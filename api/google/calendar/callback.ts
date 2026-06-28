@@ -5,10 +5,10 @@ import {
   fetchGoogleEmail,
   getRedirectUri,
   verifyOAuthState,
-} from '../../_lib/google/oauth'
-import { mergeGoogleSettings, parseGoogleSettings } from '../../_lib/google/calendarClient'
-import { fullCalendarSync } from '../../_lib/google/syncService'
-import { getIntegration, upsertIntegration } from '../../_lib/integrations'
+} from '../../_lib/google/oauth.js'
+import { mergeGoogleSettings, parseGoogleSettings } from '../../_lib/google/calendarClient.js'
+import { fullCalendarSync } from '../../_lib/google/syncService.js'
+import { getIntegration, upsertIntegration } from '../../_lib/integrations.js'
 
 export default async function handler(request: Request): Promise<Response> {
   if (request.method !== 'GET') {

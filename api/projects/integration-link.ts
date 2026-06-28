@@ -1,8 +1,8 @@
 export const config = { runtime: 'edge' }
 
-import { requireUser } from '../_lib/auth'
-import { serviceFetch } from '../_lib/integrations'
-import { errorResponse, json } from '../_lib/http'
+import { requireUser } from '../_lib/auth.js'
+import { serviceFetch } from '../_lib/integrations.js'
+import { errorResponse, json } from '../_lib/http.js'
 
 interface LinkBody {
   project_id: string

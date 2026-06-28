@@ -1,6 +1,6 @@
-import { serviceFetch } from '../integrations'
-import type { TaskSource } from '../tasks/source'
-import { parseDueHint } from './parseDate'
+import { serviceFetch } from '../integrations.js'
+import type { TaskSource } from '../tasks/source.js'
+import { parseDueHint } from './parseDate.js'
 
 export interface CaptureTaskInput {
   title: string

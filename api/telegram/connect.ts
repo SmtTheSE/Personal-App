@@ -1,11 +1,11 @@
 export const config = { runtime: 'edge' }
 
-import { requireUser } from '../_lib/auth'
-import { json, errorResponse } from '../_lib/http'
-import { getBotUsername } from '../_lib/telegram/bot'
-import { createTelegramLink } from '../_lib/telegram/link'
-import { getIntegration, upsertIntegration } from '../_lib/integrations'
-import { mergeTelegramNotifications } from '../_lib/telegram/notify'
+import { requireUser } from '../_lib/auth.js'
+import { json, errorResponse } from '../_lib/http.js'
+import { getBotUsername } from '../_lib/telegram/bot.js'
+import { createTelegramLink } from '../_lib/telegram/link.js'
+import { getIntegration, upsertIntegration } from '../_lib/integrations.js'
+import { mergeTelegramNotifications } from '../_lib/telegram/notify.js'
 
 function readTimezonePrefs(request: Request): { timezone?: string; timezone_offset?: number } {
   const url = new URL(request.url)

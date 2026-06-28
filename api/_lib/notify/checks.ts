@@ -1,5 +1,5 @@
-import { serviceFetch } from '../integrations'
-import { dispatchNotification } from './hub'
+import { serviceFetch } from '../integrations.js'
+import { dispatchNotification } from './hub.js'
 
 function hoursUntil(iso: string): number {
   return (new Date(iso).getTime() - Date.now()) / (1000 * 60 * 60)

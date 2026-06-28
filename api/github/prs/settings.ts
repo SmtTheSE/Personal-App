@@ -1,13 +1,13 @@
 export const config = { runtime: 'edge' }
 
-import { requireUser } from '../../_lib/auth'
-import { getIntegration, upsertIntegration } from '../../_lib/integrations'
+import { requireUser } from '../../_lib/auth.js'
+import { getIntegration, upsertIntegration } from '../../_lib/integrations.js'
 import {
   mergePRSyncMetadata,
   parsePRSyncSettings,
   type GitHubPRSyncSettings,
-} from '../../_lib/github/prSettings'
-import { errorResponse, json } from '../../_lib/http'
+} from '../../_lib/github/prSettings.js'
+import { errorResponse, json } from '../../_lib/http.js'
 
 type SettingsBody = Partial<GitHubPRSyncSettings>
 

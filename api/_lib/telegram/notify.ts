@@ -1,5 +1,5 @@
-import { serviceFetch } from '../integrations'
-import { sendTelegramMessage } from './bot'
+import { serviceFetch } from '../integrations.js'
+import { sendTelegramMessage } from './bot.js'
 
 export async function findChatIdByUserId(userId: string): Promise<number | null> {
   const res = await serviceFetch(

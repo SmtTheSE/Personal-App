@@ -4,8 +4,8 @@ import {
   parseGoogleSettings,
   upsertGoogleEvent,
   type GoogleCalendarEventPayload,
-} from './calendarClient'
-import { getIntegration, serviceFetch } from '../integrations'
+} from './calendarClient.js'
+import { getIntegration, serviceFetch } from '../integrations.js'
 
 export type CalendarEntityType = 'task' | 'exam' | 'focus_session'
 

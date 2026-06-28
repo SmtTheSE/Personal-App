@@ -1,4 +1,4 @@
-import type { IntegrationRecord } from '../integrations'
+import type { IntegrationRecord } from '../integrations.js'
 
 export type TaskPriority = 'low' | 'medium' | 'high'
 
@@ -42,7 +42,7 @@ export function defaultIssueSyncSettings(): GitHubIssueSyncSettings {
   }
 }
 
-import { normalizeRepoList } from './shared'
+import { normalizeRepoList } from './shared.js'
 
 function normalizeLabelPriority(value: unknown): Record<string, TaskPriority> {
   if (!value || typeof value !== 'object') return { ...DEFAULT_LABEL_PRIORITY }

@@ -1,11 +1,11 @@
 export const config = { runtime: 'edge' }
 
-import { requireUser } from '../../_lib/auth'
-import { getIntegration, upsertIntegration } from '../../_lib/integrations'
-import { fullGitHubIssueSync } from '../../_lib/github/issueSync'
-import { mergeIssueSyncMetadata } from '../../_lib/github/issueSettings'
-import { GitHubApiError } from '../../_lib/github'
-import { errorResponse, json } from '../../_lib/http'
+import { requireUser } from '../../_lib/auth.js'
+import { getIntegration, upsertIntegration } from '../../_lib/integrations.js'
+import { fullGitHubIssueSync } from '../../_lib/github/issueSync.js'
+import { mergeIssueSyncMetadata } from '../../_lib/github/issueSettings.js'
+import { GitHubApiError } from '../../_lib/github.js'
+import { errorResponse, json } from '../../_lib/http.js'
 
 export default async function handler(request: Request): Promise<Response> {
   if (request.method !== 'POST') return errorResponse('Method not allowed', 405)

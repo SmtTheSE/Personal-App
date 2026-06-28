@@ -1,5 +1,5 @@
-import { captureNote, captureTask } from '../capture/apply'
-import type { TelegramCommand } from './parse'
+import { captureNote, captureTask } from '../capture/apply.js'
+import type { TelegramCommand } from './parse.js'
 
 export async function applyCapture(
   userId: string,

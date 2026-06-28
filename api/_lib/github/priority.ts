@@ -1,4 +1,4 @@
-import { DEFAULT_LABEL_PRIORITY, type TaskPriority } from './issueSettings'
+import { DEFAULT_LABEL_PRIORITY, type TaskPriority } from './issueSettings.js'
 
 export function priorityFromLabels(
   labels: { name: string }[],

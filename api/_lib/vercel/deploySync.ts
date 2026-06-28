@@ -1,6 +1,7 @@
-import { getIntegration, getIntegrationToken, serviceFetch } from '../integrations'
-import { parseTelegramNotifications } from '../telegram/notify'
-import { vercelDeployRef } from '../tasks/source'
+import { getIntegration, getIntegrationToken, serviceFetch } from '../integrations.js'
+import { parseTelegramNotifications } from '../telegram/notify.js'
+import { dispatchNotification } from '../notify/hub.js'
+import { vercelDeployRef } from '../tasks/source.js'
 
 interface VercelDeploymentRaw {
   uid: string
@@ -165,7 +166,6 @@ export async function syncVercelDeployFailures(userId: string): Promise<VercelDe
 
       if (notifySettings.alert_deploy_fail) {
         const url = deployment.url ? `https://${deployment.url}` : ''
-        const { dispatchNotification } = await import('../notify/hub')
         const r = await dispatchNotification(userId, {
           event_type: 'deploy_fail',
           title: `Deploy failed: ${deployment.name}`,

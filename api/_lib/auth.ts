@@ -1,4 +1,4 @@
-import { errorResponse } from './http'
+import { errorResponse } from './http.js'
 
 export interface AuthUser {
   id: string
