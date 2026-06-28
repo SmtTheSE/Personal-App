@@ -2,13 +2,13 @@ export const config = { runtime: 'edge' }
 
 import { json, errorResponse } from '../_lib/http'
 import { sendTelegramMessage, verifyWebhookSecret } from '../_lib/telegram/bot'
-import { applyCapture } from '../_lib/telegram/capture'
+import { dispatchTelegramCommand } from '../_lib/telegram/dispatch'
 import {
   completeTelegramLink,
   findUserIdByChatId,
   findUserIdByLinkCode,
 } from '../_lib/telegram/link'
-import { HELP_TEXT, parseCaptureMessage } from '../_lib/telegram/parse'
+import { HELP_TEXT, parseTelegramMessage } from '../_lib/telegram/parse'
 
 interface TelegramUpdate {
   message?: {
@@ -69,14 +69,14 @@ export default async function handler(request: Request): Promise<Response> {
     return json({ ok: true })
   }
 
-  const command = parseCaptureMessage(text)
+  const command = parseTelegramMessage(text)
   if (command.type === 'help') {
     await sendTelegramMessage(chatId, HELP_TEXT)
     return json({ ok: true })
   }
 
-  const reply = await applyCapture(userId, command)
-  await sendTelegramMessage(chatId, reply)
+  const reply = await dispatchTelegramCommand(userId, command)
+  if (reply) await sendTelegramMessage(chatId, reply)
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Something went wrong'
     await sendTelegramMessage(chatId, `⚠️ ${msg}`).catch(() => undefined)

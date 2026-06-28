@@ -1,7 +1,11 @@
-export type CaptureCommand =
+export type TelegramCommand =
+  | { type: 'help' }
   | { type: 'task'; title: string; due_date: string | null }
   | { type: 'note'; title: string; content: string | null }
-  | { type: 'help' }
+  | { type: 'status' }
+  | { type: 'done'; query: string }
+  | { type: 'deploy' }
+  | { type: 'plan' }
   | { type: 'unknown'; text: string }
 
 function formatDateYmd(date: Date) {
@@ -32,14 +36,19 @@ function parseDueHint(text: string): { title: string; due_date: string | null } 
   return { title: text.trim(), due_date: null }
 }
 
-export function parseCaptureMessage(raw: string): CaptureCommand {
+export function parseTelegramMessage(raw: string): TelegramCommand {
   const text = raw.trim()
   if (!text) return { type: 'help' }
 
   const lower = text.toLowerCase()
-  if (lower === '/help' || lower === 'help' || lower === '/start') {
-    return { type: 'help' }
-  }
+  if (lower === '/help' || lower === 'help') return { type: 'help' }
+
+  if (lower === 'status' || lower === '/status') return { type: 'status' }
+  if (lower === 'deploy' || lower === '/deploy') return { type: 'deploy' }
+  if (lower === 'plan' || lower === '/plan') return { type: 'plan' }
+
+  const doneMatch = text.match(/^(?:\/done|done)\s+(.+)$/i)
+  if (doneMatch) return { type: 'done', query: doneMatch[1].trim() }
 
   const taskMatch = text.match(/^(?:\/task|task|\/t|t)\s+(.+)$/i)
   if (taskMatch) {
@@ -69,10 +78,13 @@ export const HELP_TEXT = [
   '<b>Nexus quick capture</b>',
   '',
   '<b>task</b> Buy milk tomorrow',
-  '<b>task</b> Submit lab 2026-06-30',
-  '<b>note</b> LeetCode 347',
-  '<b>note</b> Lecture recap | Key ideas from today',
+  '<b>note</b> Lecture recap | Key ideas',
+  '<b>status</b> — open tasks & streak',
+  '<b>done</b> buy milk — mark task done',
+  '<b>deploy</b> — latest Vercel deploy',
   '',
   'Aliases: <code>t</code> / <code>n</code>',
-  'Due hints: <code>today</code>, <code>tomorrow</code>, or <code>YYYY-MM-DD</code>',
 ].join('\n')
+
+/** @deprecated use parseTelegramMessage */
+export const parseCaptureMessage = parseTelegramMessage

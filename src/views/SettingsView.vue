@@ -15,6 +15,7 @@ import IOSListItem from '@/components/ui/IOSListItem.vue'
 import IOSButton from '@/components/ui/IOSButton.vue'
 import IOSSwitch from '@/components/ui/IOSSwitch.vue'
 import { PhMoon, PhSun, PhSignOut, PhTarget, PhTable, PhGithubLogo, PhRocketLaunch, PhBroom, PhCalendar, PhTelegramLogo, PhSquaresFour } from '@phosphor-icons/vue'
+import { supabase } from '@/lib/supabase'
 import { initialsFromString, gradientFromString } from '@/lib/color'
 
 const auth = useAuthStore()
@@ -49,10 +50,36 @@ async function syncGoogleCalendarNow() {
   await run(() => googleCalendar.syncNow(), { successMessage: 'Calendar synced' })
 }
 
-async function updateCalendarToggle(key: 'sync_tasks' | 'sync_exams', value: boolean) {
+async function updateCalendarToggle(
+  key: 'sync_tasks' | 'sync_exams' | 'sync_focus_sessions',
+  value: boolean
+) {
   savingCalendarSettings.value = true
   await run(() => googleCalendar.updateSettings({ [key]: value }), { successMessage: 'Calendar settings saved' })
   savingCalendarSettings.value = false
+}
+
+async function updateTravelBuffer(value: number) {
+  savingCalendarSettings.value = true
+  await run(
+    () => googleCalendar.updateSettings({ travel_buffer_mins: value }),
+    { successMessage: 'Calendar settings saved' }
+  )
+  savingCalendarSettings.value = false
+}
+
+async function syncVercelDeploys() {
+  await run(async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) throw new Error('Not authenticated')
+    const res = await fetch('/api/vercel/sync', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(body.error ?? 'Deploy sync failed')
+    return body
+  }, { successMessage: 'Vercel deploys checked' })
 }
 
 watch(
@@ -252,6 +279,9 @@ onMounted(async () => {
           <IOSButton variant="plain" size="sm" @click="router.push('/github-issues')">
             Sync GitHub Issues → Tasks
           </IOSButton>
+          <IOSButton variant="plain" size="sm" @click="router.push('/github-prs')">
+            Sync GitHub PRs → Review
+          </IOSButton>
           <IOSButton variant="plain" size="sm" class="text-system-red" @click="disconnectIntegration('github')">
             Disconnect GitHub token
           </IOSButton>
@@ -286,6 +316,15 @@ onMounted(async () => {
           <p v-if="integrations.vercelConnected" class="text-caption-2 mt-2 text-system-green">
             Vercel connected
           </p>
+          <IOSButton
+            v-if="integrations.vercelConnected"
+            variant="plain"
+            size="sm"
+            class="mt-2"
+            @click="syncVercelDeploys"
+          >
+            Check failed deploys
+          </IOSButton>
         </div>
 
         <IOSListItem
@@ -333,6 +372,29 @@ onMounted(async () => {
               </div>
             </template>
           </IOSListItem>
+          <IOSListItem title="Export focus sessions" subtitle="Log completed focus time to Google Calendar" @click.prevent>
+            <template #trailing>
+              <div @click.stop>
+                <IOSSwitch
+                  :model-value="googleCalendar.settings.sync_focus_sessions === true"
+                  label="Export focus sessions"
+                  :disabled="savingCalendarSettings"
+                  @update:model-value="updateCalendarToggle('sync_focus_sessions', $event)"
+                />
+              </div>
+            </template>
+          </IOSListItem>
+          <div class="px-4 py-2">
+            <label class="text-section-header">Travel buffer (minutes)</label>
+            <input
+              type="number"
+              min="0"
+              max="60"
+              class="mt-1 w-full rounded-[10px] fill-tertiary px-4 py-3 text-body text-primary outline-none"
+              :value="googleCalendar.settings.travel_buffer_mins ?? 0"
+              @change="updateTravelBuffer(parseInt(($event.target as HTMLInputElement).value) || 0)"
+            />
+          </div>
           <IOSButton variant="plain" size="sm" class="text-system-red" @click="disconnectGoogleCalendar">
             Disconnect Google Calendar
           </IOSButton>
@@ -359,8 +421,19 @@ onMounted(async () => {
 
         <div v-if="telegram.connected || telegram.linkUrl" class="space-y-2 px-4 py-2">
           <p class="text-caption-1 text-tertiary">
-            Send <code class="text-footnote">task Buy milk tomorrow</code> or <code class="text-footnote">note LeetCode 347</code>
+            Send <code class="text-footnote">task Buy milk tomorrow</code>, <code class="text-footnote">status</code>, or <code class="text-footnote">deploy</code>
           </p>
+          <IOSListItem v-if="telegram.connected" title="Daily digest" subtitle="Morning summary via Telegram" @click.prevent>
+            <template #trailing>
+              <div @click.stop>
+                <IOSSwitch
+                  :model-value="telegram.notifications.digest_enabled"
+                  label="Daily digest"
+                  @update:model-value="run(() => telegram.updateNotifications({ digest_enabled: $event }))"
+                />
+              </div>
+            </template>
+          </IOSListItem>
           <IOSButton v-if="telegram.linkUrl" size="sm" variant="bordered" @click="openTelegramLink">
             Open Telegram bot
           </IOSButton>

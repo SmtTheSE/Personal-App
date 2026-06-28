@@ -1,5 +1,12 @@
 import type { KanbanColumn } from '@/types/kanban'
-import type { Task, TaskStatus } from '@/types'
+import type { TaskStatus } from '@/types'
+
+export {
+  isGitHubSyncedTask,
+  isGitHubIssueTask,
+  isGitHubPRTask,
+  isVercelDeployTask,
+} from '@/lib/tasks/source'
 
 export function statusForKanbanColumn(column: KanbanColumn): TaskStatus {
   if (column === 'done') return 'done'
@@ -12,8 +19,4 @@ export function kanbanColumnForStatus(status: TaskStatus, kanbanColumn?: KanbanC
   if (status === 'done') return 'done'
   if (status === 'in_progress') return 'in_progress'
   return 'todo'
-}
-
-export function isGitHubSyncedTask(task: Task): boolean {
-  return task.description?.includes('GitHub:') ?? false
 }

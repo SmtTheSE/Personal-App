@@ -13,7 +13,7 @@ import {
 import type { CalendarEvent } from '@/composables/useCalendarWeek'
 import type { Task } from '@/types'
 import type { DayPlan, PlanBlockKind, PlanTimeBlock, WeeklyPlanSummary } from '@/types/planner'
-import { isGitHubSyncedTask } from '@/lib/kanban/columns'
+import { isGitHubSyncedTask, isGitHubPRTask, isVercelDeployTask } from '@/lib/tasks/source'
 
 const FOCUS_BLOCK_MINS = 25
 const DAY_START_HOUR = 8
@@ -31,7 +31,7 @@ function clampDayWindow(day: Date) {
   }
 }
 
-function eventToInterval(event: CalendarEvent): BusyInterval | null {
+function eventToInterval(event: CalendarEvent, travelBufferMins: number): BusyInterval | null {
   if (event.type === 'task') return null
   const start = event.allDay
     ? setMinutes(setHours(startOfDay(event.date), DAY_START_HOUR), 0)
@@ -39,6 +39,13 @@ function eventToInterval(event: CalendarEvent): BusyInterval | null {
   const end = event.allDay
     ? setMinutes(setHours(startOfDay(event.date), DAY_END_HOUR), 0)
     : (event.endDate ?? addMinutes(event.date, 60))
+
+  if (travelBufferMins > 0 && !event.allDay) {
+    return {
+      start: addMinutes(start, -travelBufferMins),
+      end: addMinutes(end, travelBufferMins),
+    }
+  }
   return { start, end }
 }
 
@@ -84,6 +91,9 @@ function priorityScore(task: Task) {
   const map = { high: 3, medium: 2, low: 1 }
   let score = map[task.priority]
   if (isGitHubSyncedTask(task)) score += 0.5
+  if (isGitHubPRTask(task)) score += 1.5
+  if (isVercelDeployTask(task)) score += 2
+  if (task.kanban_column === 'review') score += 1
   if (task.due_date) {
     const due = parseISO(task.due_date).getTime()
     const days = (due - Date.now()) / (1000 * 60 * 60 * 24)
@@ -146,18 +156,38 @@ function taskDeadlineBlock(task: Task, day: Date): PlanTimeBlock | null {
   }
 }
 
+function prReviewBlock(task: Task, day: Date): PlanTimeBlock | null {
+  if (task.kanban_column !== 'review' || task.status === 'done') return null
+  const start = setMinutes(setHours(startOfDay(day), 9), 0)
+  return {
+    id: `review-pr-${task.id}-${day.toISOString()}`,
+    kind: 'fixed',
+    title: task.title,
+    subtitle: 'PR review · kanban',
+    start,
+    end: addMinutes(start, 45),
+    sourceType: 'review',
+    sourceId: task.id,
+    path: '/kanban',
+    suggested: false,
+  }
+}
+
 export function buildWeeklyPlan(input: {
   weekStart: Date
   events: CalendarEvent[]
   tasks: Task[]
   studyGoalMinsPerDay: number
+  travelBufferMins?: number
 }): WeeklyPlanSummary {
+  const travelBufferMins = input.travelBufferMins ?? 0
   const weekEnd = endOfWeek(input.weekStart, { weekStartsOn: 1 })
   const days = eachDayOfInterval({ start: input.weekStart, end: weekEnd })
   const pendingTasks = input.tasks.filter((t) => t.status !== 'done')
   const rankedTasks = [...pendingTasks].sort((a, b) => priorityScore(b) - priorityScore(a))
 
   const githubTaskCount = pendingTasks.filter(isGitHubSyncedTask).length
+  const prReviewCount = pendingTasks.filter((t) => t.kanban_column === 'review').length
   let taskCursor = 0
 
   const dayPlans: DayPlan[] = days.map((day) => {
@@ -172,10 +202,12 @@ export function buildWeeklyPlan(input: {
     for (const task of pendingTasks) {
       const deadline = taskDeadlineBlock(task, day)
       if (deadline) fixedBlocks.push(deadline)
+      const review = prReviewBlock(task, day)
+      if (review) fixedBlocks.push(review)
     }
 
     const busy = dayEvents
-      .map(eventToInterval)
+      .map((event) => eventToInterval(event, travelBufferMins))
       .filter((x): x is BusyInterval => x !== null)
 
     const slots = freeSlots(day, busy)
@@ -246,5 +278,6 @@ export function buildWeeklyPlan(input: {
     totalStudyScheduledMins: dayPlans.reduce((sum, d) => sum + d.studyScheduledMins, 0),
     pendingTasks: pendingTasks.length,
     githubTaskCount,
+    prReviewCount,
   }
 }

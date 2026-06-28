@@ -117,6 +117,12 @@ const router = createRouter({
           meta: { transition: 'slide-push' },
         },
         {
+          path: 'github-prs',
+          name: 'github-prs',
+          component: () => import('@/views/GitHubPRsView.vue'),
+          meta: { transition: 'slide-push' },
+        },
+        {
           path: 'interview',
           name: 'interview',
           component: () => import('@/views/InterviewView.vue'),

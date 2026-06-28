@@ -1,11 +1,15 @@
-export type CalendarEntityType = 'task' | 'exam'
+export type CalendarEntityType = 'task' | 'exam' | 'focus_session'
 
 export type CalendarSyncAction = 'full' | 'upsert' | 'delete'
 
 export interface GoogleCalendarSettings {
   calendar_id?: string
+  export_calendar_id?: string
+  import_calendar_ids?: string[]
   sync_tasks?: boolean
   sync_exams?: boolean
+  sync_focus_sessions?: boolean
+  travel_buffer_mins?: number
   token_expires_at?: string | null
   email?: string | null
 }

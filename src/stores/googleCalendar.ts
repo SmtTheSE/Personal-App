@@ -18,10 +18,25 @@ async function authHeader(): Promise<Record<string, string>> {
 }
 
 function parseSettings(metadata: Record<string, unknown>): GoogleCalendarSettings {
+  const exportId =
+    typeof metadata.export_calendar_id === 'string'
+      ? metadata.export_calendar_id
+      : typeof metadata.calendar_id === 'string'
+        ? metadata.calendar_id
+        : 'primary'
+  const importIds = Array.isArray(metadata.import_calendar_ids)
+    ? metadata.import_calendar_ids.filter((id): id is string => typeof id === 'string')
+    : [exportId]
+
   return {
-    calendar_id: typeof metadata.calendar_id === 'string' ? metadata.calendar_id : 'primary',
+    calendar_id: exportId,
+    export_calendar_id: exportId,
+    import_calendar_ids: importIds.length ? importIds : [exportId],
     sync_tasks: metadata.sync_tasks !== false,
     sync_exams: metadata.sync_exams !== false,
+    sync_focus_sessions: metadata.sync_focus_sessions === true,
+    travel_buffer_mins:
+      typeof metadata.travel_buffer_mins === 'number' ? metadata.travel_buffer_mins : 0,
     email: typeof metadata.email === 'string' ? metadata.email : null,
     token_expires_at:
       typeof metadata.token_expires_at === 'string' ? metadata.token_expires_at : null,
@@ -33,7 +48,11 @@ export const useGoogleCalendarStore = defineStore('googleCalendar', () => {
   const settings = ref<GoogleCalendarSettings>({
     sync_tasks: true,
     sync_exams: true,
+    sync_focus_sessions: false,
+    travel_buffer_mins: 0,
     calendar_id: 'primary',
+    export_calendar_id: 'primary',
+    import_calendar_ids: ['primary'],
     email: null,
     token_expires_at: null,
   })
@@ -84,7 +103,11 @@ export const useGoogleCalendarStore = defineStore('googleCalendar', () => {
     settings.value = {
       sync_tasks: true,
       sync_exams: true,
+      sync_focus_sessions: false,
+      travel_buffer_mins: 0,
       calendar_id: 'primary',
+      export_calendar_id: 'primary',
+      import_calendar_ids: ['primary'],
       email: null,
       token_expires_at: null,
     }

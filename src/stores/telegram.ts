@@ -83,14 +83,46 @@ export const useTelegramStore = defineStore('telegram', () => {
     integrationRow.value = null
   }
 
+  const notifications = computed(() => {
+    const meta = integrationRow.value?.metadata ?? {}
+    const raw = meta.notifications
+    if (!raw || typeof raw !== 'object') {
+      return { digest_enabled: false, digest_hour_utc: 8, alert_deploy_fail: true }
+    }
+    const n = raw as Record<string, unknown>
+    return {
+      digest_enabled: n.digest_enabled === true,
+      digest_hour_utc: typeof n.digest_hour_utc === 'number' ? n.digest_hour_utc : 8,
+      alert_deploy_fail: n.alert_deploy_fail !== false,
+    }
+  })
+
+  async function updateNotifications(patch: {
+    digest_enabled?: boolean
+    digest_hour_utc?: number
+    alert_deploy_fail?: boolean
+  }) {
+    const headers = await authHeader()
+    const res = await fetch('/api/telegram/settings', {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch),
+    })
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(body.error ?? 'Settings update failed')
+    await fetchStatus()
+  }
+
   return {
     linkUrl,
     botUsername,
     connecting,
     connected,
     displayName,
+    notifications,
     fetchStatus,
     connect,
     disconnect,
+    updateNotifications,
   }
 })

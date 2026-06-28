@@ -40,4 +40,5 @@ export interface WeeklyPlanSummary {
   totalStudyScheduledMins: number
   pendingTasks: number
   githubTaskCount: number
+  prReviewCount: number
 }

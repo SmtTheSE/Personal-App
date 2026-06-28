@@ -5,6 +5,7 @@ import {
   deleteSyncedEntity,
   fullCalendarSync,
   syncExam,
+  syncFocusSession,
   syncTask,
   type CalendarEntityType,
 } from '../../_lib/google/syncService'
@@ -43,7 +44,9 @@ export default async function handler(request: Request): Promise<Response> {
     const result =
       body.entity_type === 'task'
         ? await syncTask(user.id, body.entity_id)
-        : await syncExam(user.id, body.entity_id)
+        : body.entity_type === 'exam'
+          ? await syncExam(user.id, body.entity_id)
+          : await syncFocusSession(user.id, body.entity_id)
 
     return json(result)
   } catch (err) {

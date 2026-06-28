@@ -7,7 +7,7 @@ import {
 } from './calendarClient'
 import { getIntegration, serviceFetch } from '../integrations'
 
-export type CalendarEntityType = 'task' | 'exam'
+export type CalendarEntityType = 'task' | 'exam' | 'focus_session'
 
 interface TaskRow {
   id: string
@@ -31,6 +31,16 @@ interface ExamRow {
   color: string
 }
 
+interface StudySessionRow {
+  id: string
+  user_id: string
+  topic: string
+  duration_mins: number
+  project_id: string | null
+  session_type?: string
+  started_at: string
+}
+
 interface SyncMapping {
   id: string
   entity_type: CalendarEntityType
@@ -38,6 +48,47 @@ interface SyncMapping {
   external_calendar_id: string
   external_event_id: string
   content_hash: string
+}
+
+function exportCalendarId(settings: ReturnType<typeof parseGoogleSettings>) {
+  return settings.export_calendar_id || settings.calendar_id
+}
+
+function focusSessionPayload(session: StudySessionRow): GoogleCalendarEventPayload | null {
+  if ((session.session_type ?? 'focus') !== 'focus') return null
+  const start = new Date(session.started_at)
+  const end = new Date(start.getTime() + session.duration_mins * 60 * 1000)
+  return {
+    summary: `[Nexus] Focus: ${session.topic}`,
+    description: `${session.duration_mins} minute focus session`,
+    start: { dateTime: start.toISOString() },
+    end: { dateTime: end.toISOString() },
+    extendedProperties: {
+      private: {
+        nexus_entity_type: 'focus_session',
+        nexus_entity_id: session.id,
+        nexus_app: 'nexus-student-os',
+      },
+    },
+    colorId: '10',
+  }
+}
+
+async function fetchStudySession(userId: string, sessionId: string): Promise<StudySessionRow | null> {
+  const res = await serviceFetch(
+    `/rest/v1/study_sessions?user_id=eq.${userId}&id=eq.${sessionId}&select=id,user_id,topic,duration_mins,project_id,session_type,started_at&limit=1`
+  )
+  if (!res.ok) throw new Error(await res.text())
+  const rows = (await res.json()) as StudySessionRow[]
+  return rows[0] ?? null
+}
+
+async function fetchStudySessions(userId: string): Promise<StudySessionRow[]> {
+  const res = await serviceFetch(
+    `/rest/v1/study_sessions?user_id=eq.${userId}&select=id,user_id,topic,duration_mins,project_id,session_type,started_at&order=started_at.desc&limit=200`
+  )
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
 }
 
 async function hashContent(value: string): Promise<string> {
@@ -213,14 +264,15 @@ export async function syncTask(userId: string, taskId: string, accessToken?: str
   const mapping = await fetchMapping(userId, 'task', taskId)
   if (mapping?.content_hash === contentHash) return { action: 'unchanged' as const }
 
+  const calId = exportCalendarId(auth.settings)
   const eventId = await upsertGoogleEvent(
     auth.accessToken,
-    auth.settings.calendar_id,
+    calId,
     mapping?.external_event_id ?? null,
     payload
   )
 
-  await upsertMapping(userId, 'task', taskId, auth.settings.calendar_id, eventId, contentHash)
+  await upsertMapping(userId, 'task', taskId, calId, eventId, contentHash)
   return { action: 'synced' as const }
 }
 
@@ -244,14 +296,54 @@ export async function syncExam(userId: string, examId: string, accessToken?: str
   const mapping = await fetchMapping(userId, 'exam', examId)
   if (mapping?.content_hash === contentHash) return { action: 'unchanged' as const }
 
+  const calId = exportCalendarId(auth.settings)
   const eventId = await upsertGoogleEvent(
     auth.accessToken,
-    auth.settings.calendar_id,
+    calId,
     mapping?.external_event_id ?? null,
     payload
   )
 
-  await upsertMapping(userId, 'exam', examId, auth.settings.calendar_id, eventId, contentHash)
+  await upsertMapping(userId, 'exam', examId, calId, eventId, contentHash)
+  return { action: 'synced' as const }
+}
+
+export async function syncFocusSession(
+  userId: string,
+  sessionId: string,
+  accessToken?: string,
+  calendarId?: string
+) {
+  const integration = await getIntegration(userId, 'google_calendar')
+  const settings = parseGoogleSettings(integration?.metadata ?? {})
+  if (!settings.sync_focus_sessions) return { action: 'skipped' as const }
+
+  const auth = accessToken && calendarId
+    ? { accessToken, settings: { ...settings, export_calendar_id: calendarId, calendar_id: calendarId } }
+    : await getGoogleAccessToken(userId)
+
+  const session = await fetchStudySession(userId, sessionId)
+  if (!session) {
+    await removeEntityEvent(userId, auth.accessToken, 'focus_session', sessionId)
+    return { action: 'deleted' as const }
+  }
+
+  const payload = focusSessionPayload(session)
+  if (!payload) return { action: 'skipped' as const }
+
+  const contentHash = await hashContent(JSON.stringify(payload))
+  const mapping = await fetchMapping(userId, 'focus_session', sessionId)
+  if (mapping?.content_hash === contentHash) return { action: 'unchanged' as const }
+
+  const calId = exportCalendarId(auth.settings)
+  const eventId = await upsertGoogleEvent(
+    auth.accessToken,
+    calId,
+    mapping?.external_event_id ?? null,
+    payload
+  )
+
+  await upsertMapping(userId, 'focus_session', sessionId, calId, eventId, contentHash)
   return { action: 'synced' as const }
 }
 
@@ -269,11 +361,13 @@ export async function fullCalendarSync(userId: string) {
   const { accessToken, settings } = await getGoogleAccessToken(userId)
   const result = { synced: 0, deleted: 0, skipped: 0, errors: [] as string[] }
 
+  const calId = exportCalendarId(settings)
+
   if (settings.sync_tasks) {
     const tasks = await fetchTasks(userId)
     for (const task of tasks) {
       try {
-        const out = await syncTask(userId, task.id, accessToken, settings.calendar_id)
+        const out = await syncTask(userId, task.id, accessToken, calId)
         if (out.action === 'synced') result.synced++
         else if (out.action === 'deleted') result.deleted++
         else result.skipped++
@@ -287,12 +381,26 @@ export async function fullCalendarSync(userId: string) {
     const exams = await fetchExams(userId)
     for (const exam of exams) {
       try {
-        const out = await syncExam(userId, exam.id, accessToken, settings.calendar_id)
+        const out = await syncExam(userId, exam.id, accessToken, calId)
         if (out.action === 'synced') result.synced++
         else if (out.action === 'deleted') result.deleted++
         else result.skipped++
       } catch (err) {
         result.errors.push(`exam ${exam.id}: ${err instanceof Error ? err.message : 'sync failed'}`)
+      }
+    }
+  }
+
+  if (settings.sync_focus_sessions) {
+    const sessions = await fetchStudySessions(userId)
+    for (const session of sessions) {
+      try {
+        const out = await syncFocusSession(userId, session.id, accessToken, calId)
+        if (out.action === 'synced') result.synced++
+        else if (out.action === 'deleted') result.deleted++
+        else result.skipped++
+      } catch (err) {
+        result.errors.push(`focus ${session.id}: ${err instanceof Error ? err.message : 'sync failed'}`)
       }
     }
   }

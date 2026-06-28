@@ -42,10 +42,7 @@ export function defaultIssueSyncSettings(): GitHubIssueSyncSettings {
   }
 }
 
-function normalizeRepoList(repos: unknown): string[] {
-  if (!Array.isArray(repos)) return []
-  return [...new Set(repos.filter((r): r is string => typeof r === 'string' && r.includes('/')))]
-}
+import { normalizeRepoList } from './shared'
 
 function normalizeLabelPriority(value: unknown): Record<string, TaskPriority> {
   if (!value || typeof value !== 'object') return { ...DEFAULT_LABEL_PRIORITY }

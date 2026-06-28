@@ -1,18 +1,16 @@
-import { fetchAllOpenRepoIssues, type GitHubIssueRaw } from './issuesClient'
-import {
-  parseIssueSyncSettings,
-  type GitHubIssueSyncStats,
-} from './issueSettings'
+import { fetchAllOpenRepoPulls, fetchGitHubUsername, type GitHubPRRaw } from './prsClient'
+import { parsePRSyncSettings, type GitHubPRSyncSettings } from './prSettings'
+import type { GitHubIssueSyncStats } from './issueSettings'
 import { priorityFromLabels } from './priority'
 import { getIntegration, getIntegrationToken, serviceFetch } from '../integrations'
-import { formatGitHubFooter, githubIssueRef } from '../tasks/source'
+import { formatGitHubFooter, githubPrRef } from '../tasks/source'
 import { buildDescription, mergeSyncedTaskUpdate } from '../tasks/syncHelpers'
 
-interface IssueMapping {
+interface PRMapping {
   id: string
   repo_full_name: string
-  external_issue_number: number
-  external_issue_id: number
+  external_pr_number: number
+  external_pr_id: number
   task_id: string
   content_hash: string
 }
@@ -33,26 +31,20 @@ async function hashContent(value: string): Promise<string> {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
-function issueSnapshot(issue: GitHubIssueRaw) {
+function prSnapshot(pr: GitHubPRRaw) {
   return JSON.stringify({
-    title: issue.title,
-    body: issue.body ?? '',
-    labels: issue.labels.map((l) => l.name.toLowerCase()).sort(),
-    milestone_due: issue.milestone?.due_on ?? null,
-    state: issue.state,
-    number: issue.number,
+    title: pr.title,
+    body: pr.body ?? '',
+    labels: pr.labels.map((l) => l.name.toLowerCase()).sort(),
+    state: pr.state,
+    number: pr.number,
+    draft: pr.draft,
   })
 }
 
-function issueDescription(repoFullName: string, issue: GitHubIssueRaw): string {
-  const footer = formatGitHubFooter(repoFullName, issue.number, issue.html_url, 'issue')
-  return buildDescription(issue.body, footer) ?? footer
-}
-
-function dueDateFromIssue(issue: GitHubIssueRaw): string | null {
-  const due = issue.milestone?.due_on
-  if (!due) return null
-  return due.split('T')[0]
+function prDescription(repoFullName: string, pr: GitHubPRRaw): string {
+  const footer = formatGitHubFooter(repoFullName, pr.number, pr.html_url, 'pr')
+  return buildDescription(pr.body, footer) ?? footer
 }
 
 async function fetchProjects(userId: string): Promise<ProjectRow[]> {
@@ -81,19 +73,19 @@ async function nextTaskSortOrder(userId: string): Promise<number> {
 async function fetchMapping(
   userId: string,
   repoFullName: string,
-  issueNumber: number
-): Promise<IssueMapping | null> {
+  prNumber: number
+): Promise<PRMapping | null> {
   const res = await serviceFetch(
-    `/rest/v1/github_issue_sync_mappings?user_id=eq.${userId}&repo_full_name=eq.${encodeURIComponent(repoFullName)}&external_issue_number=eq.${issueNumber}&select=*&limit=1`
+    `/rest/v1/github_pr_sync_mappings?user_id=eq.${userId}&repo_full_name=eq.${encodeURIComponent(repoFullName)}&external_pr_number=eq.${prNumber}&select=*&limit=1`
   )
   if (!res.ok) throw new Error(await res.text())
-  const rows = (await res.json()) as IssueMapping[]
+  const rows = (await res.json()) as PRMapping[]
   return rows[0] ?? null
 }
 
-async function fetchMappingsForRepo(userId: string, repoFullName: string): Promise<IssueMapping[]> {
+async function fetchMappingsForRepo(userId: string, repoFullName: string): Promise<PRMapping[]> {
   const res = await serviceFetch(
-    `/rest/v1/github_issue_sync_mappings?user_id=eq.${userId}&repo_full_name=eq.${encodeURIComponent(repoFullName)}&select=*`
+    `/rest/v1/github_pr_sync_mappings?user_id=eq.${userId}&repo_full_name=eq.${encodeURIComponent(repoFullName)}&select=*`
   )
   if (!res.ok) throw new Error(await res.text())
   return res.json()
@@ -102,20 +94,20 @@ async function fetchMappingsForRepo(userId: string, repoFullName: string): Promi
 async function upsertMapping(
   userId: string,
   repoFullName: string,
-  issue: GitHubIssueRaw,
+  pr: GitHubPRRaw,
   taskId: string,
   contentHash: string
 ) {
   const res = await serviceFetch(
-    '/rest/v1/github_issue_sync_mappings?on_conflict=user_id,repo_full_name,external_issue_number',
+    '/rest/v1/github_pr_sync_mappings?on_conflict=user_id,repo_full_name,external_pr_number',
     {
       method: 'POST',
       headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
       body: JSON.stringify({
         user_id: userId,
         repo_full_name: repoFullName,
-        external_issue_number: issue.number,
-        external_issue_id: issue.id,
+        external_pr_number: pr.number,
+        external_pr_id: pr.id,
         task_id: taskId,
         content_hash: contentHash,
         last_synced_at: new Date().toISOString(),
@@ -136,7 +128,7 @@ async function fetchTaskRow(userId: string, taskId: string): Promise<TaskRow | n
 
 async function createTask(
   userId: string,
-  issue: GitHubIssueRaw,
+  pr: GitHubPRRaw,
   repoFullName: string,
   projectId: string | null,
   labelPriority: Record<string, 'low' | 'medium' | 'high'>
@@ -147,16 +139,16 @@ async function createTask(
     headers: { Prefer: 'return=representation' },
     body: JSON.stringify({
       user_id: userId,
-      title: issue.title,
-      description: issueDescription(repoFullName, issue),
-      priority: priorityFromLabels(issue.labels, labelPriority),
-      status: 'todo',
-      kanban_column: 'todo',
-      due_date: dueDateFromIssue(issue),
+      title: `Review: ${pr.title}`,
+      description: prDescription(repoFullName, pr),
+      priority: priorityFromLabels(pr.labels, labelPriority),
+      status: 'in_progress',
+      kanban_column: 'review',
+      due_date: null,
       project_id: projectId,
       sort_order,
-      source: 'github_issue',
-      external_ref: githubIssueRef(repoFullName, issue.number, issue.html_url),
+      source: 'github_pr',
+      external_ref: githubPrRef(repoFullName, pr.number, pr.html_url),
     }),
   })
   if (!res.ok) throw new Error(await res.text())
@@ -169,17 +161,17 @@ async function createTask(
 async function updateTask(
   userId: string,
   taskId: string,
-  issue: GitHubIssueRaw,
+  pr: GitHubPRRaw,
   repoFullName: string,
   projectId: string | null,
   labelPriority: Record<string, 'low' | 'medium' | 'high'>
 ) {
   const existing = await fetchTaskRow(userId, taskId)
-  const patch = mergeSyncedTaskUpdate(existing ?? { id: taskId, status: 'todo' }, {
-    title: issue.title,
-    description: issueDescription(repoFullName, issue),
-    priority: priorityFromLabels(issue.labels, labelPriority),
-    due_date: dueDateFromIssue(issue),
+  const patch = mergeSyncedTaskUpdate(existing ?? { id: taskId, status: 'in_progress', kanban_column: 'review' }, {
+    title: `Review: ${pr.title}`,
+    description: prDescription(repoFullName, pr),
+    priority: priorityFromLabels(pr.labels, labelPriority),
+    due_date: null,
     project_id: projectId,
   })
 
@@ -188,7 +180,7 @@ async function updateTask(
     headers: { Prefer: 'return=representation' },
     body: JSON.stringify({
       ...patch,
-      external_ref: githubIssueRef(repoFullName, issue.number, issue.html_url),
+      external_ref: githubPrRef(repoFullName, pr.number, pr.html_url),
     }),
   })
   if (!res.ok) throw new Error(await res.text())
@@ -200,28 +192,44 @@ async function closeTask(taskId: string) {
     headers: { Prefer: 'return=minimal' },
     body: JSON.stringify({
       status: 'done',
+      kanban_column: 'done',
       completed_at: new Date().toISOString(),
     }),
   })
   if (!res.ok) throw new Error(await res.text())
 }
 
-async function syncRepoIssues(
+function shouldIncludePR(
+  pr: GitHubPRRaw,
+  settings: GitHubPRSyncSettings,
+  githubUsername: string | null
+): boolean {
+  if (pr.draft) return false
+  if (!settings.review_requested_only) return true
+  if (!githubUsername) return true
+  const reviewers = pr.requested_reviewers ?? []
+  return reviewers.some((r) => r.login.toLowerCase() === githubUsername.toLowerCase())
+}
+
+async function syncRepoPRs(
   userId: string,
   token: string,
   repoFullName: string,
-  settings: ReturnType<typeof parseIssueSyncSettings>,
+  settings: GitHubPRSyncSettings,
   projects: ProjectRow[],
+  githubUsername: string | null,
   stats: GitHubIssueSyncStats
 ) {
-  const issues = await fetchAllOpenRepoIssues(token, repoFullName)
-  const openNumbers = new Set(issues.map((issue) => issue.number))
+  const pulls = await fetchAllOpenRepoPulls(token, repoFullName)
+  const openNumbers = new Set(pulls.map((pr) => pr.number))
   const projectId = resolveProjectId(projects, repoFullName)
 
-  for (const issue of issues) {
+  for (const pr of pulls) {
+    if (!shouldIncludePR(pr, settings, githubUsername)) continue
+
     try {
-      const contentHash = await hashContent(issueSnapshot(issue))
-      const mapping = await fetchMapping(userId, repoFullName, issue.number)
+      const contentHash = await hashContent(prSnapshot(pr))
+      const mapping = await fetchMapping(userId, repoFullName, pr.number)
 
       if (mapping?.content_hash === contentHash) {
         stats.unchanged++
@@ -229,49 +237,49 @@ async function syncRepoIssues(
       }
 
       if (mapping) {
-        await updateTask(userId, mapping.task_id, issue, repoFullName, projectId, settings.label_priority)
-        await upsertMapping(userId, repoFullName, issue, mapping.task_id, contentHash)
+        await updateTask(userId, mapping.task_id, pr, repoFullName, projectId, {})
+        await upsertMapping(userId, repoFullName, pr, mapping.task_id, contentHash)
         stats.updated++
       } else {
-        const task = await createTask(userId, issue, repoFullName, projectId, settings.label_priority)
-        await upsertMapping(userId, repoFullName, issue, task.id, contentHash)
+        const task = await createTask(userId, pr, repoFullName, projectId, {})
+        await upsertMapping(userId, repoFullName, pr, task.id, contentHash)
         stats.created++
       }
     } catch (err) {
       stats.errors.push(
-        `${repoFullName}#${issue.number}: ${err instanceof Error ? err.message : 'sync failed'}`
+        `${repoFullName}#${pr.number}: ${err instanceof Error ? err.message : 'sync failed'}`
       )
     }
   }
 
-  if (!settings.sync_closed_as_done) return
+  if (!settings.sync_merged_as_done) return
 
   const mappings = await fetchMappingsForRepo(userId, repoFullName)
   for (const mapping of mappings) {
-    if (openNumbers.has(mapping.external_issue_number)) continue
+    if (openNumbers.has(mapping.external_pr_number)) continue
     try {
       await closeTask(mapping.task_id)
       stats.closed++
     } catch (err) {
       stats.errors.push(
-        `${repoFullName}#${mapping.external_issue_number}: ${err instanceof Error ? err.message : 'close failed'}`
+        `${repoFullName}#${mapping.external_pr_number}: ${err instanceof Error ? err.message : 'close failed'}`
       )
     }
   }
 }
 
-export async function fullGitHubIssueSync(userId: string): Promise<GitHubIssueSyncStats> {
+export async function fullGitHubPRSync(userId: string): Promise<GitHubIssueSyncStats> {
   const token = await getIntegrationToken(userId, 'github')
   if (!token) throw new Error('GitHub not connected')
 
   const integration = await getIntegration(userId, 'github')
-  const settings = parseIssueSyncSettings(integration?.metadata ?? {})
+  const settings = parsePRSyncSettings(integration?.metadata ?? {})
 
   if (!settings.enabled) {
-    throw new Error('GitHub issue sync is disabled')
+    throw new Error('GitHub PR sync is disabled')
   }
   if (!settings.repos.length) {
-    throw new Error('Select at least one repository to sync')
+    throw new Error('Select at least one repository to sync PRs')
   }
 
   const stats: GitHubIssueSyncStats = {
@@ -282,11 +290,14 @@ export async function fullGitHubIssueSync(userId: string): Promise<GitHubIssueSy
     errors: [],
   }
 
-  const projects = await fetchProjects(userId)
+  const [projects, githubUsername] = await Promise.all([
+    fetchProjects(userId),
+    fetchGitHubUsername(token),
+  ])
 
   for (const repoFullName of settings.repos) {
     try {
-      await syncRepoIssues(userId, token, repoFullName, settings, projects, stats)
+      await syncRepoPRs(userId, token, repoFullName, settings, projects, githubUsername, stats)
     } catch (err) {
       stats.errors.push(`${repoFullName}: ${err instanceof Error ? err.message : 'repo sync failed'}`)
     }
@@ -294,3 +305,5 @@ export async function fullGitHubIssueSync(userId: string): Promise<GitHubIssueSy
 
   return stats
 }
+
+export type { GitHubPRSyncSettings }

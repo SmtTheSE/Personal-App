@@ -64,6 +64,12 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
     if (error) throw error
     sessions.value.unshift(data)
+
+    if (sessionType === 'focus') {
+      const { enqueueCalendarSync } = await import('@/lib/calendar/syncClient')
+      enqueueCalendarSync('upsert', 'focus_session', data.id)
+    }
+
     return data
   }
 

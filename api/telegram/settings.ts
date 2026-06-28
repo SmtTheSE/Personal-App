@@ -1,0 +1,42 @@
+export const config = { runtime: 'edge' }
+
+import { requireUser } from '../_lib/auth'
+import { getIntegration, upsertIntegration } from '../_lib/integrations'
+import {
+  mergeTelegramNotifications,
+  parseTelegramNotifications,
+  type TelegramNotificationSettings,
+} from '../_lib/telegram/notify'
+import { errorResponse, json } from '../_lib/http'
+
+export default async function handler(request: Request): Promise<Response> {
+  if (request.method !== 'POST') return errorResponse('Method not allowed', 405)
+
+  const user = await requireUser(request)
+  if (user instanceof Response) return user
+
+  try {
+    const existing = await getIntegration(user.id, 'telegram')
+    if (!existing?.access_token || existing.access_token === 'pending') {
+      return errorResponse('Telegram not connected', 400)
+    }
+
+    const body = (await request.json()) as Partial<TelegramNotificationSettings>
+    const current = parseTelegramNotifications(existing.metadata ?? {})
+    const metadata = mergeTelegramNotifications(existing.metadata ?? {}, {
+      digest_enabled: body.digest_enabled ?? current.digest_enabled,
+      digest_hour_utc: body.digest_hour_utc ?? current.digest_hour_utc,
+      alert_deploy_fail: body.alert_deploy_fail ?? current.alert_deploy_fail,
+    })
+
+    await upsertIntegration(user.id, 'telegram', {
+      access_token: existing.access_token,
+      refresh_token: existing.refresh_token,
+      metadata,
+    })
+
+    return json({ settings: parseTelegramNotifications(metadata) })
+  } catch (err) {
+    return errorResponse(err instanceof Error ? err.message : 'Settings update failed', 500)
+  }
+}

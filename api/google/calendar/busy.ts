@@ -1,7 +1,7 @@
 export const config = { runtime: 'edge' }
 
 import { requireUser } from '../../_lib/auth'
-import { getGoogleAccessToken, listGoogleEvents } from '../../_lib/google/calendarClient'
+import { getGoogleAccessToken, listGoogleEventsFromCalendars } from '../../_lib/google/calendarClient'
 import { errorResponse, json } from '../../_lib/http'
 
 export default async function handler(request: Request): Promise<Response> {
@@ -20,9 +20,13 @@ export default async function handler(request: Request): Promise<Response> {
     }
 
     const { accessToken, settings } = await getGoogleAccessToken(user.id)
-    const events = await listGoogleEvents(accessToken, settings.calendar_id, timeMin, timeMax, {
-      excludeNexus: true,
-    })
+    const events = await listGoogleEventsFromCalendars(
+      accessToken,
+      settings.import_calendar_ids,
+      timeMin,
+      timeMax,
+      { excludeNexus: true }
+    )
 
     const blocks = events.map((event) => ({
       id: event.id,

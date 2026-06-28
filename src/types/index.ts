@@ -49,12 +49,16 @@ export interface Task {
   priority: TaskPriority
   status: TaskStatus
   kanban_column?: KanbanColumn
+  source?: TaskSource
+  external_ref?: Record<string, unknown> | null
   due_date: string | null
   project_id: string | null
   sort_order: number
   completed_at: string | null
   created_at: string
 }
+
+export type TaskSource = 'manual' | 'github_issue' | 'github_pr' | 'telegram' | 'vercel_deploy'
 
 export type SessionType = 'focus' | 'short_break' | 'long_break' | 'review'
 

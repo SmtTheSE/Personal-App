@@ -1,5 +1,5 @@
 import { serviceFetch } from '../integrations'
-import type { CaptureCommand } from './parse'
+import type { TelegramCommand } from './parse'
 
 async function nextTaskSortOrder(userId: string): Promise<number> {
   const res = await serviceFetch(
@@ -10,14 +10,10 @@ async function nextTaskSortOrder(userId: string): Promise<number> {
   return (rows[0]?.sort_order ?? -1) + 1
 }
 
-export async function applyCapture(userId: string, command: CaptureCommand): Promise<string> {
-  if (command.type === 'help') {
-    return ''
-  }
-  if (command.type === 'unknown') {
-    return 'Unknown command. Send <b>help</b> for examples.'
-  }
-
+export async function applyCapture(
+  userId: string,
+  command: Extract<TelegramCommand, { type: 'task' } | { type: 'note' }>
+): Promise<string> {
   if (command.type === 'task') {
     const sort_order = await nextTaskSortOrder(userId)
     const res = await serviceFetch('/rest/v1/tasks', {
@@ -32,6 +28,8 @@ export async function applyCapture(userId: string, command: CaptureCommand): Pro
         due_date: command.due_date,
         project_id: null,
         sort_order,
+        source: 'telegram',
+        external_ref: { provider: 'telegram' },
       }),
     })
     if (!res.ok) {
