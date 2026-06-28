@@ -1,6 +1,7 @@
 import { applyCapture } from './capture.js'
 import type { TelegramCommand } from './parse.js'
 import { handleDeployCommand, handleDoneCommand, handleStatusCommand, buildDailyDigest, handleTimezoneCommand } from './commands.js'
+import { handleGmailCommand } from './gmail.js'
 
 export async function dispatchTelegramCommand(userId: string, command: TelegramCommand): Promise<string> {
   switch (command.type) {
@@ -17,6 +18,8 @@ export async function dispatchTelegramCommand(userId: string, command: TelegramC
       return buildDailyDigest(userId)
     case 'timezone':
       return handleTimezoneCommand(userId, command.query)
+    case 'gmail':
+      return handleGmailCommand(userId, command.query)
     case 'task':
     case 'note':
       return applyCapture(userId, command)

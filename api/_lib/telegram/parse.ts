@@ -8,6 +8,7 @@ export type TelegramCommand =
   | { type: 'plan' }
   | { type: 'digest' }
   | { type: 'timezone'; query: string }
+  | { type: 'gmail'; query: string }
   | { type: 'unknown'; text: string }
 
 function formatDateYmd(date: Date) {
@@ -53,6 +54,9 @@ export function parseTelegramMessage(raw: string): TelegramCommand {
   const timezoneMatch = text.match(/^(?:\/timezone|timezone)\s*(.*)$/i)
   if (timezoneMatch) return { type: 'timezone', query: timezoneMatch[1].trim() }
 
+  const gmailMatch = text.match(/^(?:\/gmail|gmail|\/mail|mail)(?:\s+(.*))?$/i)
+  if (gmailMatch) return { type: 'gmail', query: (gmailMatch[1] ?? '').trim() }
+
   const doneMatch = text.match(/^(?:\/done|done)\s+(.+)$/i)
   if (doneMatch) return { type: 'done', query: doneMatch[1].trim() }
 
@@ -88,6 +92,9 @@ export const HELP_TEXT = [
   '<b>status</b> — open tasks & streak',
   '<b>plan</b> / <b>digest</b> — daily summary on demand',
   '<b>timezone</b> Asia/Bangkok — set local time for greetings',
+  '<b>gmail</b> — recent school inbox (SBS mail)',
+  '<b>gmail 1</b> — read full email #1 from the list',
+  '<b>gmail check</b> — refresh inbox &amp; check for new alerts',
   '<b>done</b> buy milk — mark task done',
   '<b>deploy</b> — latest Vercel deploy',
   '',
