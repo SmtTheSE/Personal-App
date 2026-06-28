@@ -1,6 +1,6 @@
 import { applyCapture } from './capture'
 import type { TelegramCommand } from './parse'
-import { handleDeployCommand, handleDoneCommand, handleStatusCommand } from './commands'
+import { handleDeployCommand, handleDoneCommand, handleStatusCommand, buildDailyDigest } from './commands'
 
 export async function dispatchTelegramCommand(userId: string, command: TelegramCommand): Promise<string> {
   switch (command.type) {
@@ -13,7 +13,8 @@ export async function dispatchTelegramCommand(userId: string, command: TelegramC
     case 'deploy':
       return handleDeployCommand(userId)
     case 'plan':
-      return handleStatusCommand(userId)
+    case 'digest':
+      return buildDailyDigest(userId)
     case 'task':
     case 'note':
       return applyCapture(userId, command)

@@ -421,15 +421,15 @@ onMounted(async () => {
 
         <div v-if="telegram.connected || telegram.linkUrl" class="space-y-2 px-4 py-2">
           <p class="text-caption-1 text-tertiary">
-            Send <code class="text-footnote">task Buy milk tomorrow</code>, <code class="text-footnote">status</code>, or <code class="text-footnote">deploy</code>
+            Send <code class="text-footnote">task Buy milk tomorrow</code>, <code class="text-footnote">plan</code> for a daily summary, or <code class="text-footnote">deploy</code>
           </p>
-          <IOSListItem v-if="telegram.connected" title="Daily digest" subtitle="Morning summary via Telegram" @click.prevent>
+          <IOSListItem v-if="telegram.connected" title="Deploy failure alerts" subtitle="Telegram ping when Vercel deploy fails" @click.prevent>
             <template #trailing>
               <div @click.stop>
                 <IOSSwitch
-                  :model-value="telegram.notifications.digest_enabled"
-                  label="Daily digest"
-                  @update:model-value="run(() => telegram.updateNotifications({ digest_enabled: $event }))"
+                  :model-value="telegram.notifications.alert_deploy_fail"
+                  label="Deploy failure alerts"
+                  @update:model-value="run(() => telegram.updateNotifications({ alert_deploy_fail: $event }))"
                 />
               </div>
             </template>

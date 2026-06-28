@@ -6,6 +6,7 @@ export type TelegramCommand =
   | { type: 'done'; query: string }
   | { type: 'deploy' }
   | { type: 'plan' }
+  | { type: 'digest' }
   | { type: 'unknown'; text: string }
 
 function formatDateYmd(date: Date) {
@@ -46,6 +47,7 @@ export function parseTelegramMessage(raw: string): TelegramCommand {
   if (lower === 'status' || lower === '/status') return { type: 'status' }
   if (lower === 'deploy' || lower === '/deploy') return { type: 'deploy' }
   if (lower === 'plan' || lower === '/plan') return { type: 'plan' }
+  if (lower === 'digest' || lower === '/digest') return { type: 'digest' }
 
   const doneMatch = text.match(/^(?:\/done|done)\s+(.+)$/i)
   if (doneMatch) return { type: 'done', query: doneMatch[1].trim() }
@@ -80,6 +82,7 @@ export const HELP_TEXT = [
   '<b>task</b> Buy milk tomorrow',
   '<b>note</b> Lecture recap | Key ideas',
   '<b>status</b> — open tasks & streak',
+  '<b>plan</b> / <b>digest</b> — daily summary on demand',
   '<b>done</b> buy milk — mark task done',
   '<b>deploy</b> — latest Vercel deploy',
   '',
