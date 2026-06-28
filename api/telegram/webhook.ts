@@ -13,6 +13,7 @@ import { HELP_TEXT, parseTelegramMessage } from '../_lib/telegram/parse.js'
 import {
   VIEWER_HELP_TEXT,
   addPlanViewer,
+  buildSharePlanReply,
   findOwnerUserIdByPlanViewerCode,
   findOwnerUserIdByViewerChatId,
 } from '../_lib/telegram/viewers.js'
@@ -87,6 +88,16 @@ export default async function handler(request: Request): Promise<Response> {
     const command = parseTelegramMessage(text)
     if (command.type === 'help') {
       await sendTelegramMessage(chatId, HELP_TEXT)
+      return json({ ok: true })
+    }
+
+    if (command.type === 'share_plan') {
+      const reply = await buildSharePlanReply(ownerUserId)
+      await sendTelegramMessage(chatId, reply.text, {
+        buttonUrl: reply.link_url,
+        buttonText: '👉 Tap to connect',
+        disablePreview: false,
+      })
       return json({ ok: true })
     }
 

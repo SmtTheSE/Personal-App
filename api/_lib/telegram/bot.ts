@@ -19,14 +19,32 @@ export async function telegramRequest<T>(method: string, body?: Record<string, u
   return data.result as T
 }
 
-export async function sendTelegramMessage(chatId: number | string, text: string, options?: { silent?: boolean }) {
-  return telegramRequest('sendMessage', {
+export async function sendTelegramMessage(
+  chatId: number | string,
+  text: string,
+  options?: {
+    silent?: boolean
+    buttonUrl?: string
+    buttonText?: string
+    disablePreview?: boolean
+  }
+) {
+  const body: Record<string, unknown> = {
     chat_id: chatId,
     text,
     parse_mode: 'HTML',
-    disable_web_page_preview: true,
+    disable_web_page_preview: options?.disablePreview !== false,
     disable_notification: options?.silent === true,
-  })
+  }
+  if (options?.buttonUrl) {
+    body.reply_markup = {
+      inline_keyboard: [[{
+        text: options.buttonText ?? 'Open link',
+        url: options.buttonUrl,
+      }]],
+    }
+  }
+  return telegramRequest('sendMessage', body)
 }
 
 export async function getBotUsername(): Promise<string> {

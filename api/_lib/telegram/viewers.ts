@@ -129,3 +129,17 @@ export const VIEWER_HELP_TEXT = [
   'Send <b>plan</b> to see their schedule for today.',
   'Only the daily plan is shared — nothing else.',
 ].join('\n')
+
+export async function buildSharePlanReply(userId: string) {
+  const invite = await createPlanViewerInvite(userId)
+  return {
+    text: [
+      '<b>Share your today plan</b>',
+      '',
+      'Forward this message — they tap the button below, then send <b>plan</b>:',
+      '',
+      `<i>Expires ${invite.expires_at.split('T')[0]}</i>`,
+    ].join('\n'),
+    link_url: invite.link_url,
+  }
+}
