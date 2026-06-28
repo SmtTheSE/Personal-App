@@ -14,10 +14,10 @@ const emit = defineEmits<{
 
 <template>
   <section>
-    <div class="mb-3 flex items-center justify-between px-4">
-      <div>
-        <h2 class="text-title-3 text-primary">{{ day.label }}</h2>
-        <p class="text-footnote text-tertiary">
+    <div class="mb-3 flex items-center gap-3 px-4">
+      <div class="min-w-0 flex-1">
+        <h2 class="text-title-3 truncate text-primary">{{ day.label }}</h2>
+        <p class="text-footnote truncate text-tertiary">
           {{ day.openTaskCount }} open items
           <span v-if="day.studyGoalMins"> · {{ day.studyScheduledMins }}/{{ day.studyGoalMins }} min study</span>
         </p>
@@ -26,8 +26,8 @@ const emit = defineEmits<{
         v-if="day.studyGoalMins"
         :value="day.studyScheduledMins"
         :max="day.studyGoalMins"
-        :size="44"
-        :stroke-width="4"
+        :size="52"
+        :stroke-width="5"
         label="Study"
       />
     </div>

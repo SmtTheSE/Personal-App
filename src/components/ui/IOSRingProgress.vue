@@ -18,10 +18,19 @@ const circumference = computed(() => 2 * Math.PI * radius.value)
 const progress = computed(() => Math.min(1, props.max > 0 ? props.value / props.max : 0))
 const offset = computed(() => circumference.value * (1 - progress.value))
 const percent = computed(() => Math.round(progress.value * 100))
+
+const percentClass = computed(() => {
+  if (props.size <= 48) return 'text-caption-1 font-bold leading-none'
+  if (props.size <= 72) return 'text-footnote font-bold leading-none'
+  if (props.size <= 96) return 'text-headline font-bold leading-none'
+  return 'text-title-2 font-bold'
+})
+
+const labelClass = computed(() => (props.size <= 48 ? 'text-caption-2' : 'text-caption-1'))
 </script>
 
 <template>
-  <div class="relative inline-flex items-center justify-center" :style="{ width: `${size}px`, height: `${size}px` }">
+  <div class="relative shrink-0" :style="{ width: `${size}px`, height: `${size}px` }">
     <svg :width="size" :height="size" class="-rotate-90">
       <circle
         :cx="size / 2"
@@ -45,9 +54,9 @@ const percent = computed(() => Math.round(progress.value * 100))
         :style="{ transitionTimingFunction: 'var(--ease-ios)' }"
       />
     </svg>
-    <div class="absolute text-center">
-      <p class="text-title-2 font-bold text-primary">{{ percent }}%</p>
-      <p v-if="label" class="text-caption-1 text-tertiary">{{ label }}</p>
+    <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+      <p class="text-primary" :class="percentClass">{{ percent }}%</p>
+      <p v-if="label" class="text-tertiary" :class="labelClass">{{ label }}</p>
     </div>
   </div>
 </template>
