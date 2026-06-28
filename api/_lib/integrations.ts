@@ -90,6 +90,11 @@ export async function upsertIntegration(
 
   if (!res.ok) {
     const text = await res.text()
+    if (text.includes('user_integrations_provider_check') || text.includes('violates check constraint')) {
+      throw new Error(
+        'Database missing gmail provider — run supabase/migrations/v12_gmail_provider.sql in Supabase SQL editor'
+      )
+    }
     throw new Error(`Failed to save integration: ${text}`)
   }
 }

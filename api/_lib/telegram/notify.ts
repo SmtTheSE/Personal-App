@@ -15,10 +15,10 @@ export async function findChatIdByUserId(userId: string): Promise<number | null>
   return Number.isFinite(chatId) ? chatId : null
 }
 
-export async function notifyUser(userId: string, text: string): Promise<boolean> {
+export async function notifyUser(userId: string, text: string, options?: { silent?: boolean }): Promise<boolean> {
   const chatId = await findChatIdByUserId(userId)
   if (!chatId) return false
-  await sendTelegramMessage(chatId, text)
+  await sendTelegramMessage(chatId, text, options)
   return true
 }
 

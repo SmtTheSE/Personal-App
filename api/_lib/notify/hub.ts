@@ -76,8 +76,11 @@ export async function dispatchNotification(
   const telegramConnected = await isTelegramConnected(userId)
   if (merged.telegram && telegramConnected) {
     const html = event.telegram_html ?? `<b>${event.title}</b>\n${event.body}`
-    result.telegram = await notifyUser(userId, html)
-  } else if (merged.web_push) {
+    const silent = event.event_type !== 'gmail_alert'
+    result.telegram = await notifyUser(userId, html, { silent })
+  }
+
+  if (merged.web_push) {
     result.web_push = await sendWebPush(userId, event)
   }
 

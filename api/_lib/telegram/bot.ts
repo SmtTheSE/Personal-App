@@ -19,12 +19,13 @@ export async function telegramRequest<T>(method: string, body?: Record<string, u
   return data.result as T
 }
 
-export async function sendTelegramMessage(chatId: number | string, text: string) {
+export async function sendTelegramMessage(chatId: number | string, text: string, options?: { silent?: boolean }) {
   return telegramRequest('sendMessage', {
     chat_id: chatId,
     text,
     parse_mode: 'HTML',
     disable_web_page_preview: true,
+    disable_notification: options?.silent === true,
   })
 }
 

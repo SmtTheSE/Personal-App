@@ -178,8 +178,19 @@ onMounted(async () => {
 
   const gmailStatus = route.query.gmail
   if (gmailStatus === 'connected') {
-    await gmail.loadStatus()
-    ui.showToast(gmail.email ? `Gmail connected — ${gmail.email}` : 'Gmail connected', 'success')
+    try {
+      await gmail.loadStatus()
+      if (gmail.connected) {
+        ui.showToast(gmail.email ? `Gmail connected — ${gmail.email}` : 'Gmail connected', 'success')
+      } else {
+        ui.showToast(
+          'Google authorized, but Nexus could not save Gmail. Run migration v12_gmail_provider.sql in Supabase, then Connect again.',
+          'error'
+        )
+      }
+    } catch {
+      ui.showToast('Could not verify Gmail status. Make sure you are logged in, then try Connect again.', 'error')
+    }
     router.replace({ query: {} })
   } else if (gmailStatus === 'error') {
     const message = typeof route.query.message === 'string' ? route.query.message : 'Gmail connection failed'
@@ -494,7 +505,7 @@ onMounted(async () => {
         </IOSListItem>
         <IOSListItem
           title="Notification inbox"
-          :subtitle="`${notifications.unreadCount} unread · exam, streak, PR alerts`"
+          :subtitle="`${notifications.unreadCount} unread · exam, streak, PR, Gmail alerts`"
         >
           <template #trailing>
             <IOSButton size="sm" variant="bordered" @click="runNotificationChecks">Check now</IOSButton>

@@ -44,6 +44,8 @@ export const useAuthStore = defineStore('auth', () => {
       void useTelegramStore().fetchStatus().catch(() => {})
       const { useNotificationsStore } = await import('@/stores/notifications')
       void useNotificationsStore().runChecks().catch(() => {})
+      const { useGmailStore } = await import('@/stores/gmail')
+      void useGmailStore().loadStatus().catch(() => {})
     }
 
     supabase.auth.onAuthStateChange(async (event, newSession) => {

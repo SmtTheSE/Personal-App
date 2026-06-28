@@ -6,6 +6,7 @@ import {
   fetchGoogleEmail,
 } from '../google/oauth.js'
 import { getIntegration, upsertIntegration } from '../integrations.js'
+import { DEFAULT_ALERT_KEYWORDS } from './client.js'
 
 export const GMAIL_SCOPES = [
   'https://www.googleapis.com/auth/gmail.readonly',
@@ -51,6 +52,9 @@ export async function completeGmailOAuth(code: string, redirectUri: string, user
       email: email ?? existing?.metadata?.email ?? null,
       connected_at: new Date().toISOString(),
       expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
+      alert_enabled: existing?.metadata?.alert_enabled ?? true,
+      alert_keywords: existing?.metadata?.alert_keywords ?? DEFAULT_ALERT_KEYWORDS,
+      last_alert_check_at: new Date().toISOString(),
     },
   })
 }

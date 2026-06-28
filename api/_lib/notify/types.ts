@@ -4,6 +4,7 @@ export type NotificationEventType =
   | 'streak_at_risk'
   | 'pr_review_requested'
   | 'daily_digest'
+  | 'gmail_alert'
 
 export interface NotificationPayload {
   event_type: NotificationEventType
@@ -22,6 +23,7 @@ export interface NotificationPreferences {
   alert_exam_reminder: boolean
   alert_streak_at_risk: boolean
   alert_pr_review: boolean
+  alert_gmail: boolean
   digest_enabled: boolean
 }
 
@@ -33,6 +35,7 @@ export const DEFAULT_NOTIFICATION_PREFS: NotificationPreferences = {
   alert_exam_reminder: true,
   alert_streak_at_risk: true,
   alert_pr_review: true,
+  alert_gmail: true,
   digest_enabled: false,
 }
 
@@ -47,6 +50,7 @@ export function parseNotificationPrefs(metadata: Record<string, unknown>): Notif
     alert_exam_reminder: n.alert_exam_reminder !== false,
     alert_streak_at_risk: n.alert_streak_at_risk !== false,
     alert_pr_review: n.alert_pr_review !== false,
+    alert_gmail: n.alert_gmail !== false,
     digest_enabled: n.digest_enabled === true,
   }
 }
@@ -61,6 +65,8 @@ export function eventEnabled(prefs: NotificationPreferences, type: NotificationE
       return prefs.alert_streak_at_risk
     case 'pr_review_requested':
       return prefs.alert_pr_review
+    case 'gmail_alert':
+      return prefs.alert_gmail
     case 'daily_digest':
       return prefs.digest_enabled
     default:

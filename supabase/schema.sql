@@ -356,7 +356,7 @@ create policy "Users can read own calendar sync mappings"
 
 alter table public.user_integrations drop constraint if exists user_integrations_provider_check;
 alter table public.user_integrations add constraint user_integrations_provider_check
-  check (provider in ('github', 'vercel', 'google_calendar', 'telegram'));
+  check (provider in ('github', 'vercel', 'google_calendar', 'telegram', 'gmail'));
 
 -- GitHub Issues → tasks (v8)
 
@@ -479,3 +479,11 @@ create policy "Users manage own project integration links"
 alter table public.calendar_sync_mappings drop constraint if exists calendar_sync_mappings_entity_type_check;
 alter table public.calendar_sync_mappings add constraint calendar_sync_mappings_entity_type_check
   check (entity_type in ('task', 'exam', 'focus_session'));
+
+-- Gmail inbox keyword alerts (v13)
+
+alter table public.notification_events drop constraint if exists notification_events_event_type_check;
+alter table public.notification_events add constraint notification_events_event_type_check
+  check (event_type in (
+    'deploy_fail', 'exam_reminder', 'streak_at_risk', 'pr_review_requested', 'daily_digest', 'gmail_alert'
+  ));

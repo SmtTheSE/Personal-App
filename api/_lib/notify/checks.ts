@@ -1,5 +1,6 @@
 import { serviceFetch } from '../integrations.js'
 import { dispatchNotification } from './hub.js'
+import { checkGmailAlerts } from '../gmail/alertService.js'
 
 function hoursUntil(iso: string): number {
   return (new Date(iso).getTime() - Date.now()) / (1000 * 60 * 60)
@@ -94,5 +95,10 @@ export async function runNotificationChecks(userId: string) {
     if (r.in_app || r.telegram || r.web_push) sent.push('pr_review')
   }
 
-  return { sent, streak, exam_count: exams.length, pr_count: prs.length }
+  const gmailAlerts = await checkGmailAlerts(userId)
+  if (!('skipped' in gmailAlerts) && gmailAlerts.notified > 0) {
+    sent.push(`gmail:${gmailAlerts.notified}`)
+  }
+
+  return { sent, streak, exam_count: exams.length, pr_count: prs.length, gmail_alerts: gmailAlerts }
 }

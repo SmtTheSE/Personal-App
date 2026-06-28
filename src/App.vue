@@ -2,6 +2,7 @@
 import { RouterView, useRoute } from 'vue-router'
 import { useDark } from '@vueuse/core'
 import ToastHost from '@/components/ui/ToastHost.vue'
+import { useNotificationPolling } from '@/composables/useNotificationPolling'
 
 useDark({
   selector: 'html',
@@ -10,6 +11,8 @@ useDark({
   valueLight: '',
   storageKey: 'nexus-dark-mode',
 })
+
+useNotificationPolling()
 
 const route = useRoute()
 </script>
